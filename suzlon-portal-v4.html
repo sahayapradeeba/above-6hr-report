@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Suzlon SMS Report Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080a0f;--s1:#0d1017;--s2:#111520;--border:#1c2535;--border2:#263040;
+  --amber:#f5a623;--amber2:#d4900f;--amber-dim:rgba(245,166,35,0.08);
+  --green:#2ecc71;--red:#e74c3c;--blue:#3498db;--purple:#9b59b6;--cyan:#1abc9c;
+  --text:#cdd4e0;--text2:#7a8ba0;--text3:#3d4f63;
+  --new:#1a3a1a;--new-border:#2e7d32;
+}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:12px;}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* HEADER */
+header{
+  background:var(--s1);border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;
+  position:sticky;top:0;z-index:100;
+}
+.logo-area{display:flex;align-items:center;gap:14px;}
+.logo-badge{
+  font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.15em;
+  color:var(--bg);background:var(--amber);padding:2px 10px;border-radius:3px;line-height:1.2;
+}
+.logo-text{font-size:10px;color:var(--text2);letter-spacing:.2em;text-transform:uppercase;line-height:1.5;}
+.logo-sub{font-size:9px;color:var(--text3);letter-spacing:.1em;}
+.header-right{display:flex;align-items:center;gap:20px;}
+.live-clock{text-align:right;}
+#hdr-date{font-size:11px;color:var(--amber);font-weight:600;letter-spacing:.05em;}
+#hdr-time{font-size:10px;color:var(--text2);letter-spacing:.08em;margin-top:2px;}
+.refresh-badge{
+  font-size:9px;padding:4px 10px;border-radius:20px;cursor:pointer;
+  border:1px solid var(--border2);color:var(--text2);background:var(--s2);
+  transition:all .2s;letter-spacing:.05em;text-transform:uppercase;
+}
+.refresh-badge.warning{border-color:var(--amber);color:var(--amber);background:var(--amber-dim);}
+.refresh-badge:hover{border-color:var(--text);color:var(--text);}
+
+/* MAIN TABS */
+.nav{display:flex;background:var(--s1);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto;}
+.nav-btn{
+  background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--text2);cursor:pointer;font-family:inherit;font-size:10px;
+  font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  padding:12px 18px;transition:all .2s;white-space:nowrap;
+}
+.nav-btn.active{border-bottom-color:var(--amber);color:var(--amber);}
+.nav-btn:hover:not(.active){color:var(--text);}
+
+/* MAIN CONTENT */
+main{max-width:1100px;margin:0 auto;padding:20px;}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px;}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-title{
+  font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.15em;
+  color:var(--amber);display:flex;align-items:center;gap:8px;
+}
+.card-title::before{content:'';width:3px;height:14px;background:var(--amber);border-radius:1px;}
+.card-title.green{color:var(--green)}.card-title.green::before{background:var(--green)}
+.card-title.blue{color:var(--blue)}.card-title.blue::before{background:var(--blue)}
+.card-title.red{color:var(--red)}.card-title.red::before{background:var(--red)}
+.card-title.cyan{color:var(--cyan)}.card-title.cyan::before{background:var(--cyan)}
+.card-title.purple{color:var(--purple)}.card-title.purple::before{background:var(--purple)}
+
+/* PANELS */
+.panel{display:none}.panel.active{display:block}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+/* FORM ELEMENTS */
+label.lbl{display:block;font-size:9px;color:var(--text2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+input,select,textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;
+  color:var(--text);font-family:inherit;font-size:11px;padding:7px 10px;
+  outline:none;transition:border-color .15s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--amber)}
+select option{background:var(--s2)}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+textarea{resize:vertical;min-height:48px}
+.field{margin-bottom:10px}
+
+/* UPLOAD ZONE */
+.upload-zone{
+  border:2px dashed var(--border2);border-radius:6px;padding:20px;
+  text-align:center;cursor:pointer;transition:all .2s;position:relative;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--amber);background:var(--amber-dim)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone.ok{border-color:var(--green);background:rgba(46,204,113,.05)}
+.upload-icon{font-size:22px;margin-bottom:6px}
+.upload-title{font-size:11px;font-weight:600;color:var(--text)}
+.upload-sub{font-size:9px;color:var(--text2);margin-top:3px;letter-spacing:.05em}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;border:none;border-radius:6px;
+  cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;
+  padding:8px 16px;transition:all .15s;letter-spacing:.04em;
+}
+.btn-a{background:var(--amber);color:#000}.btn-a:hover{background:var(--amber2);transform:translateY(-1px)}
+.btn-g{background:var(--green);color:#000}.btn-g:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-o{background:transparent;border:1px solid var(--amber);color:var(--amber)}.btn-o:hover{background:var(--amber-dim)}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}.btn-ghost:hover{border-color:var(--text);color:var(--text)}
+.btn-red{background:transparent;border:1px solid var(--red);color:var(--red)}.btn-red:hover{background:rgba(231,76,60,.1)}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{filter:brightness(1.1)}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:5px 10px;font-size:10px}
+.btn-xs{padding:2px 7px;font-size:9px;border:1px solid;border-radius:3px;cursor:pointer;font-family:inherit}
+.btn-xs-red{color:var(--red);border-color:var(--red);background:transparent}
+.btn-xs-green{color:var(--green);border-color:var(--green);background:transparent}
+.btn-xs-amber{color:var(--amber);border-color:var(--amber);background:transparent}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+/* STATS */
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{
+  background:var(--s2);border:1px solid var(--border);border-radius:7px;
+  padding:10px 14px;flex:1;min-width:72px;
+}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amber);line-height:1;}
+.stat-val.green{color:var(--green)}.stat-val.red{color:var(--red)}.stat-val.blue{color:var(--blue)}
+.stat-lbl{font-size:8px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{
+  background:var(--s2);color:var(--amber);font-size:8px;letter-spacing:.12em;
+  text-transform:uppercase;padding:7px 8px;text-align:left;
+  border-bottom:1px solid var(--border);white-space:nowrap;font-weight:600;
+}
+td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr.row-hidden td{opacity:.3;text-decoration:line-through}
+tr.row-new{background:var(--new)}
+tr.row-new td{border-color:var(--new-border)}
+tr:hover td{background:rgba(255,255,255,.015)}
+.badge{display:inline-block;font-size:8px;border-radius:3px;padding:2px 6px;font-weight:700;letter-spacing:.05em}
+.badge-amber{background:rgba(245,166,35,.15);color:var(--amber)}
+.badge-red{background:rgba(231,76,60,.15);color:var(--red)}
+.badge-green{background:rgba(46,204,113,.15);color:var(--green)}
+.badge-blue{background:rgba(52,152,219,.15);color:var(--blue)}
+.badge-new{background:var(--new);color:#4caf50;border:1px solid var(--new-border)}
+
+/* OUTPUT BOX */
+.out-box{
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:16px;position:relative;
+}
+.out-label{font-size:8px;color:var(--text2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px}
+.out-text{
+  white-space:pre-wrap;font-size:11px;line-height:1.9;color:var(--text);
+  font-family:'IBM Plex Mono',monospace;
+}
+.copy-flash{animation:flash .3s ease}
+@keyframes flash{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
+
+/* INFO BANNERS */
+.info{
+  border-radius:6px;padding:9px 13px;font-size:10px;margin-bottom:10px;line-height:1.6;
+  border-left:3px solid;
+}
+.info-amber{background:rgba(245,166,35,.06);border-color:var(--amber);color:#c9a84c}
+.info-blue{background:rgba(52,152,219,.06);border-color:var(--blue);color:#6aafcf}
+.info-green{background:rgba(46,204,113,.06);border-color:var(--green);color:#5ec98e}
+.info-red{background:rgba(231,76,60,.06);border-color:var(--red);color:#d47c7c}
+
+/* ETR INPUT */
+.etr-input{
+  width:90px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;
+  color:var(--cyan);font-family:inherit;font-size:10px;padding:4px 6px;text-align:center;
+}
+.etr-input:focus{border-color:var(--cyan);outline:none}
+.etr-input.filled{border-color:var(--cyan);background:rgba(26,188,156,.08)}
+
+/* REASON INPUT */
+.reason-input{
+  min-width:120px;width:100%;background:var(--bg);border:1px solid var(--border);
+  border-radius:4px;color:var(--text);font-family:inherit;font-size:10px;padding:4px 6px;
+}
+.reason-input:focus{border-color:var(--amber);outline:none}
+
+/* AREA BLOCK */
+.area-block{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px}
+.area-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.area-name{font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.05em}
+
+/* FEEDER ENTRY */
+.fe-entry{background:var(--s1);border:1px solid var(--border);border-radius:5px;padding:10px;margin-bottom:6px}
+.fe-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+
+/* TIEUP ENTRY */
+.tu-entry{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px}
+
+/* LOADING */
+.loading-overlay{
+  position:fixed;inset:0;background:rgba(8,10,15,.8);display:flex;
+  align-items:center;justify-content:center;z-index:999;
+  backdrop-filter:blur(4px);display:none;
+}
+.loading-overlay.show{display:flex}
+.loading-box{
+  background:var(--s1);border:1px solid var(--amber);border-radius:10px;
+  padding:24px 32px;text-align:center;
+}
+.loading-spinner{
+  width:32px;height:32px;border:3px solid var(--border);
+  border-top-color:var(--amber);border-radius:50%;
+  animation:spin 0.8s linear infinite;margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:11px;color:var(--text2);letter-spacing:.05em}
+
+/* MINOR CHECKBOX */
+.chk-wrap{display:flex;align-items:center;gap:5px;cursor:pointer}
+.chk-wrap input[type=checkbox]{
+  width:14px;height:14px;cursor:pointer;accent-color:var(--amber);
+}
+.chk-wrap span{font-size:9px;color:var(--text2);letter-spacing:.05em;user-select:none}
+
+/* NEW BADGE PULSE */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulse{animation:pulse 1.5s ease infinite}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">Processing Excel...</div>
+  </div>
+</div>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-badge">SUZLON</div>
+    <div>
+      <div class="logo-text">SMS REPORT PORTAL</div>
+      <div class="logo-sub">WTG Stoppage + Feeder Status</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div id="refresh-badge" class="refresh-badge" onclick="checkRefreshStatus()">⏱ 3HR CYCLE</div>
+    <div class="live-clock">
+      <div id="hdr-date">—</div>
+      <div id="hdr-time">—</div>
+    </div>
+  </div>
+</header>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="goTab('upload')" id="nt-upload">📤 Upload & Preview</button>
+  <button class="nav-btn" onclick="goTab('ceo')" id="nt-ceo">👔 CEO Report (≥10Hr)</button>
+  <button class="nav-btn" onclick="goTab('sh')" id="nt-sh">📋 SH Report (≥6Hr)</button>
+  <button class="nav-btn" onclick="goTab('feeder')" id="nt-feeder">🔌 Feeder Status</button>
+</div>
+
+<main>
+
+<!-- ══════ UPLOAD & PREVIEW ══════ -->
+<div class="panel active" id="tab-upload">
+
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Area BD Sheet (Excel)</div></div>
+      <div class="info info-amber">📊 VLSR / MNP / Above_06 — BD Sheet la filter aagum. Multiple files upload pannalam.</div>
+      <div class="upload-zone" id="bd-zone"
+           ondragover="e=>{e.preventDefault();this.classList.add('drag')}"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="e=>{e.preventDefault();this.classList.remove('drag');handleFiles(e.dataTransfer.files)}">
+        <input type="file" id="bd-file" accept=".xlsx,.xls" multiple onchange="handleFiles(this.files)"/>
+        <div class="upload-icon">📁</div>
+        <div class="upload-title" id="bd-title">Drop BD Sheet Excel files here</div>
+        <div class="upload-sub">VLSR_MSR / MNP_MSR / Above_06_Hrs — Click or drag multiple files</div>
+      </div>
+      <div id="bd-info" style="margin-top:8px;font-size:10px;color:var(--text2)"></div>
+    </div>
+    <div>
+      <div class="stats" id="main-stats">
+        <div class="stat"><div class="stat-val" id="st-total">—</div><div class="stat-lbl">Total WTGs</div></div>
+        <div class="stat"><div class="stat-val green" id="st-visible">—</div><div class="stat-lbl">In Report</div></div>
+        <div class="stat"><div class="stat-val red" id="st-hidden">—</div><div class="stat-lbl">Hidden</div></div>
+        <div class="stat"><div class="stat-val" style="color:var(--cyan)" id="st-new">—</div><div class="stat-lbl">New WTGs</div></div>
+      </div>
+      <div class="card" style="padding:12px">
+        <div class="card-title" style="font-size:12px;margin-bottom:10px">Report Settings</div>
+        <div class="g2">
+          <div><label class="lbl">Min Hours Filter</label>
+            <select id="w-minhrs">
+              <option value="6">≥ 6 Hours</option>
+              <option value="10">≥ 10 Hours</option>
+              <option value="12">≥ 12 Hours</option>
+              <option value="24">≥ 24 Hours</option>
+            </select>
+          </div>
+          <div><label class="lbl">Area Filter</label>
+            <select id="pf-area" onchange="applyFilter()">
+              <option value="">All Areas</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <label class="chk-wrap"><input type="checkbox" id="show-hidden" onchange="applyFilter()"><span>Show Hidden</span></label>
+          <label class="chk-wrap"><input type="checkbox" id="show-new-only" onchange="applyFilter()"><span>New Only</span></label>
+          <button class="btn btn-ghost btn-sm" onclick="resetStorage()">🗑 Clear Saved</button>
+          <button class="btn btn-a btn-sm" onclick="saveAll()">💾 Save All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">WTG Preview Table</div>
+      <div style="font-size:9px;color:var(--text2);display:flex;gap:10px;align-items:center">
+        <span style="background:var(--new);border:1px solid var(--new-border);padding:2px 8px;border-radius:3px;color:#4caf50">NEW</span>
+        <span style="color:var(--cyan)">ETR = CEO report date</span>
+        <span style="color:var(--text2)">MajorBD = SH report</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Actions</th>
+            <th>WTG ID</th>
+            <th>Area</th>
+            <th>Site</th>
+            <th>Error Details</th>
+            <th>Duration</th>
+            <th>Occurred</th>
+            <th>ETR Date <span style="color:var(--cyan)">(CEO)</span></th>
+            <th>Stop Reason <span style="color:var(--text2)">(SH)</span></th>
+            <th>Major BD</th>
+          </tr>
+        </thead>
+        <tbody id="wtg-tbody"></tbody>
+      </table>
+    </div>
+    <div id="no-data" style="text-align:center;padding:30px;color:var(--text3);font-size:11px">
+      Upload Excel file to see WTG data
+    </div>
+  </div>
+
+</div><!-- /upload tab -->
+
+<!-- ══════ CEO REPORT ══════ -->
+<div class="panel" id="tab-ceo">
+  <div class="info info-amber">
+    👔 <strong>Mr. CEO Sir</strong> format — ≥10 hr WTGs only. ETR date Preview la set pannunga. Feeder tieup neenga edit pannalam.
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-a" onclick="genCEOReport()">⚡ Generate CEO Report</button>
+    <button class="btn btn-o btn-sm" onclick="goTab('upload')">← Preview Edit</button>
+  </div>
+  <div id="ceo-out-wrap">
+    <div class="btn-row">
+      <button class="btn btn-g" id="ceo-copy-btn" onclick="copyOut('ceo-out','ceo-copy-btn','📋 Copy CEO Report')">📋 Copy CEO Report</button>
+    </div>
+    <div class="out-box">
+      <div class="out-label">CEO Report — ≥10 Hrs WTG Stoppage</div>
+      <div class="out-text" id="ceo-out"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ SH REPORT ══════ -->
+<div class="panel" id="tab-sh">
+  <div class="info info-blue">
+    📋 <strong>State Head Sir</strong> format — ≥6 hr WTGs, area-grouped. Major BD checkbox ON pannina matum varum. Hide pannina rows skip aagum.
+  </div>
+  <div class="card" style="padding:12px;margin-bottom:12px">
+    <div class="g3">
+      <div>
+        <label class="chk-wrap"><input type="checkbox" id="sh-major-only"><span style="color:var(--text)">Major BD Only</span></label>
+        <div style="font-size:9px;color:var(--text2);margin-top:4px">Only MajorBD checked WTGs</div>
+      </div>
+      <div>
+        <label class="lbl">Min Hours</label>
+        <select id="sh-minhrs">
+          <option value="6">≥ 6 Hours</option>
+          <option value="10">≥ 10 Hours</option>
+          <option value="12">≥ 12 Hours</option>
+        </select>
+      </div>
+      <div>
+        <label class="lbl">Area Filter</label>
+        <select id="sh-area">
+          <option value="">All Areas</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-blue" onclick="genSHReport()">📋 Generate SH Report</button>
+    <button class="btn btn-o btn-sm" onclick="goTab('upload')">← Preview Edit</button>
+  </div>
+  <div id="sh-out-wrap">
+    <div class="btn-row">
+      <button class="btn btn-g" id="sh-copy-btn" onclick="copyOut('sh-out','sh-copy-btn','📋 Copy SH Report')">📋 Copy SH Report</button>
+    </div>
+    <div class="out-box">
+      <div class="out-label">SH Report — ≥6 Hrs WTG Stoppage (State Head)</div>
+      <div class="out-text" id="sh-out"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ FEEDER STATUS ══════ -->
+<div class="panel" id="tab-feeder">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title blue">Report Header</div>
+    </div>
+    <div class="g2">
+      <div><label class="lbl">Date</label><input type="text" id="f-date" placeholder="01-Apr-26"/></div>
+      <div><label class="lbl">Time</label><input type="text" id="f-time" placeholder="10:00"/></div>
+    </div>
+  </div>
+
+  <!-- Manual BD -->
+  <div class="card">
+    <div class="card-title">Feeder BD — Manual Entry</div>
+    <div id="fbd-areas"></div>
+  </div>
+
+  <!-- Manual LC -->
+  <div class="card">
+    <div class="card-title blue">Feeder LC — Manual Entry</div>
+    <div id="flc-areas"></div>
+  </div>
+
+  <!-- Tie-up -->
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title green">Feeder Tie-up</div>
+      <button class="btn btn-o btn-sm" onclick="addTieup()">+ Add Entry</button>
+    </div>
+    <div id="tieup-container"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-g btn-full" onclick="genFeederMsg()">Generate Feeder Report →</button>
+  </div>
+
+  <div id="feeder-out-wrap" style="display:none;margin-top:14px">
+    <div class="btn-row">
+      <button class="btn btn-g" id="f-copy-btn" onclick="copyOut('f-out','f-copy-btn','📋 Copy Feeder Report')">📋 Copy Feeder Report</button>
+    </div>
+    <div class="out-box">
+      <div class="out-label">Feeder Status Message</div>
+      <div class="out-text" id="f-out"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════
+// CONSTANTS & STATE
+// ══════════════════════════════════════════
+const AREAS = ["Bogampatti","Devarkulam","Muthayampatty","Radhapuram","Viliseri"];
+const STORAGE_KEY = 'suzlon_smsp_v4';
+const TIEUP_KEY = 'suzlon_smsp_tieup';
+const LAST_LOAD_KEY = 'suzlon_last_load';
+
+const DEFAULT_TIEUP = [
+  {area:"Muthayampatty",fc:3,desc:"Marudur 22kv SS Power transformer 5 - [Bakkiyalakshmi 22KV, Karvembu 22KV, SIL 22kV] - Feeders tie-up with Marudur 22kv SS Power transformer 4",date:"14-12-25",wc:14},
+  {area:"Muthayampatty",fc:2,desc:"Ponnapuram 33kv SS Power transformer 6 - [Ponnapuram - Madathuppalayam 33KV, Suzlon 33KV 1] - Feeders tie-up with Sadayapalayam 33kv SS - Sadayapalayam - Rohit 33KV Feeder",date:"24-12-25",wc:32},
+  {area:"Viliseri",fc:1,desc:"Chandragiri Feeder 1 tie-up with Feeder 4",date:"28-02-26",wc:12},
+  {area:"Viliseri",fc:1,desc:"Chandragiri Feeder 2 tie-up with Feeder 3",date:"28-02-26",wc:12},
+];
+
+// Live WTG rows: [{id,area,site,error,occurred,duration,status,category,etr,reason,hidden,majorBD,isNew}]
+let wtgList = [];
+// Saved state from localStorage: Map<id, {etr,reason,hidden,majorBD}>
+let savedState = {};
+// Tieup
+let tieupList = [...DEFAULT_TIEUP.map(e=>({...e}))];
+// Feeder entries
+let feederEntries = {};
+let feederCount = 0;
+AREAS.forEach(a=>{feederEntries[`bd-${a}`]=[];feederEntries[`lc-${a}`]=[];});
+
+// ══════════ UTILS ══════════
+function pad2(n){return String(n).padStart(2,'0')}
+function autoDate(){
+  const d=new Date(),M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${pad2(d.getDate())}-${M[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;
+}
+function autoTime(){const n=new Date();return pad2(n.getHours())+':'+pad2(n.getMinutes())}
+function parseDur(v){
+  if(!v)return 0;
+  v=v.toString().trim();
+  const m=v.match(/(\d+\.?\d*)/);
+  return m?parseFloat(m[1]):0;
+}
+function fmtDur(v){
+  const h=parseDur(v);
+  return Math.round(h)+' Hrs';
+}
+function fmtDate(val){
+  if(!val)return '';
+  if(val instanceof Date){
+    const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${pad2(val.getDate())}-${M[val.getMonth()]}-${String(val.getFullYear()).slice(2)}`;
+  }
+  const s=val.toString().trim();
+  // Try to detect DD-MM-YYYY or similar
+  const m=s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if(m){
+    const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${m[1]}-${M[parseInt(m[2])-1]}-${m[3].slice(2)}`;
+  }
+  return s.split(' ')[0]; // date only
+}
+function fmtTime(val){
+  if(!val)return '';
+  if(val instanceof Date)return pad2(val.getHours())+':'+pad2(val.getMinutes());
+  const s=val.toString().trim();
+  const parts=s.split(/\s+/);
+  return parts[1]?parts[1].slice(0,5):'';
+}
+function escapeHtml(s){return s?s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):''}
+
+// ══════════ LIVE CLOCK ══════════
+function updateClock(){
+  const d=new Date();
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  document.getElementById('hdr-date').textContent=`${days[d.getDay()]}, ${pad2(d.getDate())} ${M[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('hdr-time').textContent=pad2(d.getHours())+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds());
+  checkRefreshStatus();
+}
+setInterval(updateClock,1000);updateClock();
+
+function checkRefreshStatus(){
+  const last=parseInt(localStorage.getItem(LAST_LOAD_KEY)||0);
+  if(!last){document.getElementById('refresh-badge').textContent='⏱ NO DATA';return;}
+  const diff=Date.now()-last;
+  const left=3*60*60*1000-diff;
+  const badge=document.getElementById('refresh-badge');
+  if(left<0){
+    badge.textContent='⚠ REFRESH DUE';badge.className='refresh-badge warning pulse';
+  } else {
+    const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
+    badge.textContent=`⏱ ${pad2(Math.floor(m/60))}:${pad2(m%60)}:${pad2(s)}`;
+    badge.className='refresh-badge';
+  }
+}
+
+// ══════════ TAB NAV ══════════
+function goTab(t){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('nt-'+t).classList.add('active');
+  if(t==='sh')populateSHAreaFilter();
+}
+
+// ══════════ STORAGE ══════════
+function loadState(){
+  try{savedState=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch{savedState={}}
+  try{const t=JSON.parse(localStorage.getItem(TIEUP_KEY));if(t&&t.length)tieupList=t;}catch{}
+}
+function saveState(){
+  const s={};
+  wtgList.forEach(w=>{
+    s[w.id]={etr:w.etr,reason:w.reason,hidden:w.hidden,majorBD:w.majorBD};
+  });
+  // Merge with old saved (keep ETR for WTGs not in current list)
+  Object.assign(savedState,s);
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(savedState));
+  localStorage.setItem(LAST_LOAD_KEY,String(Date.now()));
+  showToast('✅ Saved to browser storage');
+}
+function saveAll(){saveState();buildTieupFromDOM();localStorage.setItem(TIEUP_KEY,JSON.stringify(tieupList));}
+function resetStorage(){if(confirm('Clear all saved ETR dates and reasons?')){localStorage.removeItem(STORAGE_KEY);savedState={};wtgList.forEach(w=>{w.etr='';w.reason='';w.hidden=false;w.majorBD=false});renderTable();showToast('🗑 Storage cleared')}}
+
+// ══════════ FILE HANDLING ══════════
+async function handleFiles(files){
+  if(!files||!files.length)return;
+  showLoading('Reading Excel files...');
+  const prevIds=new Set(wtgList.map(w=>w.id));
+  const newRows=[];
+  
+  for(const file of files){
+    await new Promise(res=>setTimeout(res,10)); // allow UI update
+    document.getElementById('loading-text').textContent=`Processing: ${file.name}`;
+    const rows=await parseExcelFile(file);
+    newRows.push(...rows);
+  }
+  
+  // Merge: preserve state for existing WTGs
+  const mergedMap={};
+  newRows.forEach(row=>{
+    const id=row.id;
+    const saved=savedState[id]||{};
+    mergedMap[id]={
+      ...row,
+      etr:saved.etr||'',
+      reason:saved.reason||row.reason||'',
+      hidden:saved.hidden||false,
+      majorBD:saved.majorBD||false,
+      isNew:!prevIds.has(id),
+    };
+  });
+  wtgList=Object.values(mergedMap);
+  
+  // Update file info
+  const cnt=wtgList.length;
+  const newCnt=wtgList.filter(w=>w.isNew).length;
+  document.getElementById('bd-title').textContent=`✅ ${files.length} file(s) loaded — ${cnt} WTGs`;
+  document.getElementById('bd-zone').classList.add('ok');
+  document.getElementById('bd-info').innerHTML=
+    `<span style="color:var(--green)">${cnt} WTGs</span> • ` +
+    `<span style="color:var(--cyan)">${newCnt} new</span> • ` +
+    (wtgList.filter(w=>parseDur(w.duration)>=10).length)+` ≥10hr WTGs`;
+
+  localStorage.setItem(LAST_LOAD_KEY,String(Date.now()));
+  populateAreaFilters();
+  renderTable();
+  updateStats();
+  hideLoading();
+  if(newCnt>0)showToast(`🆕 ${newCnt} new WTG${newCnt>1?'s':''} detected!`);
+}
+
+async function parseExcelFile(file){
+  return new Promise((resolve)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const rows=[];
+        
+        // Try to find BD sheet
+        const sheetNames=wb.SheetNames;
+        const bdSheetName=sheetNames.find(s=>
+          s.toLowerCase().includes('bd') ||
+          s.toLowerCase().includes('formula') ||
+          s.toLowerCase().includes('6hr') ||
+          s==='Sheet1'
+        )||sheetNames[0];
+        
+        const ws=wb.Sheets[bdSheetName];
+        if(!ws){resolve([]);return;}
+        
+        // SPEED FIX: Limit to first 25 columns
+        if(ws['!ref']){
+          const range=XLSX.utils.decode_range(ws['!ref']);
+          range.e.c=Math.min(range.e.c,24);
+          ws['!ref']=XLSX.utils.encode_range(range);
+        }
+        
+        const data=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false,header:1});
+        if(!data.length){resolve([]);return;}
+        
+        // Detect header row
+        let hdrRow=-1,hdrMap={};
+        for(let i=0;i<Math.min(5,data.length);i++){
+          const r=data[i];
+          const loc=r.findIndex(c=>typeof c==='string'&&c.toLowerCase().includes('location'));
+          if(loc>=0){
+            hdrRow=i;
+            r.forEach((h,j)=>{
+              const hh=(h||'').toString().toLowerCase().trim();
+              if(hh.includes('location')||hh.includes('loc_no')||hh.includes('loc no'))hdrMap.id=j;
+              if(hh==='area')hdrMap.area=j;
+              if(hh.includes('site')&&!hh.includes('main'))hdrMap.site=j;
+              if(hh.includes('error detail')||hh.includes('error_detail'))hdrMap.error=j;
+              if(hh.includes('occurred')||hh.includes('error occurred'))hdrMap.occurred=j;
+              if(hh.includes('current duration')||hh==='current duration ')hdrMap.duration=j;
+              if(hh==='status')hdrMap.status=j;
+              if(hh.includes('categor'))hdrMap.category=j;
+              if(hh.includes('customer'))hdrMap.customer=j;
+              if(hh.includes('main_site')||hh==='main site')hdrMap.mainsite=j;
+            });
+            break;
+          }
+        }
+        
+        // Also check for Formula sheet specific format (Above_06 file)
+        const isFormula=bdSheetName.toLowerCase().includes('formula');
+        
+        if(hdrRow<0){resolve([]);return;}
+        
+        for(let i=hdrRow+1;i<data.length;i++){
+          const r=data[i];
+          if(!r||!r.length)continue;
+          const id=(r[hdrMap.id]||'').toString().trim();
+          if(!id||id===''||id==='undefined')continue;
+          
+          const area=(r[hdrMap.area]||'').toString().trim();
+          const site=(r[hdrMap.mainsite!==undefined?hdrMap.mainsite:hdrMap.site]||r[hdrMap.site]||'').toString().trim();
+          const error=(r[hdrMap.error]||'').toString().trim();
+          const occurred=r[hdrMap.occurred];
+          const duration=(r[hdrMap.duration]||'').toString().trim();
+          const status=(r[hdrMap.status]||'').toString().toLowerCase().trim();
+          const category=(r[hdrMap.category]||'').toString().toLowerCase().trim();
+          const customer=(r[hdrMap.customer]||'').toString().trim();
+          
+          // Skip restored
+          if(status==='restored'||status==='restore')continue;
+          // Skip if no meaningful data
+          if(!error&&!duration)continue;
+          // Skip LC if needed (keep BD)
+          const dur=parseDur(duration);
+          if(dur<1)continue;
+          
+          rows.push({
+            id,area,site,error,
+            occurred:occurred||'',
+            duration,
+            status:status||'stopped',
+            category,
+            customer,
+            etr:'',reason:'',hidden:false,majorBD:false,isNew:false
+          });
+        }
+        resolve(rows);
+      }catch(err){
+        console.error('Parse error:',err);
+        resolve([]);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ══════════ RENDER TABLE ══════════
+function renderTable(){
+  const tbody=document.getElementById('wtg-tbody');
+  const noData=document.getElementById('no-data');
+  if(!wtgList.length){tbody.innerHTML='';noData.style.display='block';return;}
+  noData.style.display='none';
+  
+  const minHrs=parseFloat(document.getElementById('w-minhrs').value)||6;
+  const areaFilter=document.getElementById('pf-area').value;
+  const showHidden=document.getElementById('show-hidden').checked;
+  const showNewOnly=document.getElementById('show-new-only').checked;
+  
+  const visible=wtgList.filter(w=>{
+    const dur=parseDur(w.duration);
+    if(dur<minHrs)return false;
+    if(!showHidden&&w.hidden)return false;
+    if(areaFilter&&w.area!==areaFilter)return false;
+    if(showNewOnly&&!w.isNew)return false;
+    return true;
+  });
+  
+  tbody.innerHTML=visible.map((w,i)=>{
+    const idx=wtgList.indexOf(w);
+    const dur=parseDur(w.duration);
+    const is10=dur>=10;
+    const rowClass=[w.hidden?'row-hidden':'',w.isNew?'row-new':''].filter(Boolean).join(' ');
+    return`<tr id="wtr-${idx}" class="${rowClass}">
+      <td style="white-space:nowrap">
+        <button class="btn-xs ${w.hidden?'btn-xs-green':'btn-xs-red'}" onclick="toggleHide(${idx})">${w.hidden?'↩ Show':'Hide'}</button>
+      </td>
+      <td>
+        <span class="badge ${is10?'badge-red':'badge-amber'}">${escapeHtml(w.id)}</span>
+        ${w.isNew?'<span class="badge badge-new" style="margin-left:3px">NEW</span>':''}
+      </td>
+      <td style="font-size:9px;color:var(--text2)">${escapeHtml(w.area)}</td>
+      <td>${escapeHtml(w.site)}</td>
+      <td style="max-width:180px;font-size:10px;word-break:break-word">${escapeHtml(w.error)}</td>
+      <td><span class="badge ${is10?'badge-red':'badge-amber'}">${fmtDur(w.duration)}</span></td>
+      <td style="white-space:nowrap;font-size:9px;color:var(--text2)">${fmtDate(w.occurred)}<br>${fmtTime(w.occurred)}</td>
+      <td>
+        <input class="etr-input ${w.etr?'filled':''}" type="text" placeholder="DD/MM/YY"
+          value="${escapeHtml(w.etr)}" title="ETR Date for CEO Report"
+          onchange="wtgList[${idx}].etr=this.value;this.classList.toggle('filled',!!this.value)"
+          ${!is10?'style="opacity:.4"':''}/>
+      </td>
+      <td>
+        <input class="reason-input" type="text" placeholder="Manual stop / Material wait..."
+          value="${escapeHtml(w.reason)}"
+          onchange="wtgList[${idx}].reason=this.value"/>
+      </td>
+      <td style="text-align:center">
+        <input type="checkbox" ${w.majorBD?'checked':''} style="accent-color:var(--amber);cursor:pointer"
+          onchange="wtgList[${idx}].majorBD=this.checked" title="Include in SH Report"/>
+      </td>
+    </tr>`;
+  }).join('');
+  
+  updateStats();
+}
+
+function toggleHide(idx){
+  wtgList[idx].hidden=!wtgList[idx].hidden;
+  const tr=document.getElementById(`wtr-${idx}`);
+  if(tr){
+    tr.className=wtgList[idx].hidden?'row-hidden':(wtgList[idx].isNew?'row-new':'');
+    const btn=tr.querySelector('.btn-xs');
+    if(btn){
+      btn.textContent=wtgList[idx].hidden?'↩ Show':'Hide';
+      btn.className=`btn-xs ${wtgList[idx].hidden?'btn-xs-green':'btn-xs-red'}`;
+    }
+  }
+  updateStats();
+}
+
+function applyFilter(){renderTable();}
+
+function populateAreaFilters(){
+  const areas=[...new Set(wtgList.map(w=>w.area).filter(Boolean))].sort();
+  const sel1=document.getElementById('pf-area');
+  const sel2=document.getElementById('sh-area');
+  const opts='<option value="">All Areas</option>'+areas.map(a=>`<option value="${a}">${a}</option>`).join('');
+  sel1.innerHTML=opts;sel2.innerHTML=opts;
+}
+function populateSHAreaFilter(){
+  const areas=[...new Set(wtgList.map(w=>w.area).filter(Boolean))].sort();
+  document.getElementById('sh-area').innerHTML=
+    '<option value="">All Areas</option>'+areas.map(a=>`<option value="${a}">${a}</option>`).join('');
+}
+
+function updateStats(){
+  const minHrs=parseFloat(document.getElementById('w-minhrs').value)||6;
+  const filt=wtgList.filter(w=>parseDur(w.duration)>=minHrs);
+  document.getElementById('st-total').textContent=filt.length||'—';
+  document.getElementById('st-visible').textContent=filt.filter(w=>!w.hidden).length||'—';
+  document.getElementById('st-hidden').textContent=filt.filter(w=>w.hidden).length||'—';
+  document.getElementById('st-new').textContent=filt.filter(w=>w.isNew).length||'—';
+}
+
+// ══════════ CEO REPORT ══════════
+function genCEOReport(){
+  const now=new Date();
+  const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const dateStr=`${pad2(now.getDate())}-${M[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`;
+  const timeStr=pad2(now.getHours())+':'+pad2(now.getMinutes());
+  
+  const wtgs=wtgList.filter(w=>!w.hidden&&parseDur(w.duration)>=10);
+  
+  let msg=`*Mr. CEO Sir Need Your Intervention Required Below WTG*\n`;
+  msg+=`*Above 10 Hrs WTGs Status*\n\n`;
+  msg+=`*Date : ${dateStr}*\n*Time : ${timeStr}*\n`;
+  msg+=`*Total WTG's : ${pad2(wtgs.length)}*\n\n`;
+  
+  wtgs.forEach((w,i)=>{
+    const dur=Math.round(parseDur(w.duration));
+    const etr=w.etr?`  ETR - ${w.etr}`:'';
+    msg+=`*${i+1}.* ${w.id} _ ${w.site} _ ${w.error} _ ${dur} Hrs${etr}\n\n`;
+  });
+  
+  // Feeder tieup
+  msg+=buildFeederTieupText();
+  
+  document.getElementById('ceo-out').textContent=msg;
+  document.getElementById('ceo-out-wrap').style.display='block';
+  document.getElementById('ceo-out-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+// ══════════ SH REPORT ══════════
+function genSHReport(){
+  const now=new Date();
+  const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const dateStr=`${pad2(now.getDate())}-${M[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`;
+  const timeStr=pad2(now.getHours())+':'+pad2(now.getMinutes());
+  
+  const minHrs=parseFloat(document.getElementById('sh-minhrs').value)||6;
+  const majorOnly=document.getElementById('sh-major-only').checked;
+  const areaFilter=document.getElementById('sh-area').value;
+  
+  let wtgs=wtgList.filter(w=>{
+    if(w.hidden)return false;
+    if(parseDur(w.duration)<minHrs)return false;
+    if(majorOnly&&!w.majorBD)return false;
+    if(areaFilter&&w.area!==areaFilter)return false;
+    return true;
+  });
+  
+  // Group by area
+  const grouped={};
+  wtgs.forEach(w=>{
+    const a=w.area||'Unknown';
+    if(!grouped[a])grouped[a]=[];
+    grouped[a].push(w);
+  });
+  
+  let msg=`*Kind attention: State Head Sir, Your Intervention Required for the Below WTGs*\n`;
+  msg+=`*Above ${pad2(minHrs)} Hrs WTGs Status*\n\n`;
+  msg+=`*Date : ${dateStr}*\n*Time : ${timeStr}*\n`;
+  msg+=`*Total WTG's : ${pad2(wtgs.length)}*\n`;
+  
+  for(const[area,items]of Object.entries(grouped)){
+    msg+=`\n*${area}-${pad2(items.length)}*\n`;
+    items.forEach((w,i)=>{
+      const dur=Math.round(parseDur(w.duration));
+      const reason=w.reason?` / ${w.reason}`:'';
+      msg+=`\n*${i+1}.* ${w.id} _ ${w.site} _ ${w.error}${reason} _ ${dur} Hrs\n`;
+    });
+  }
+  
+  msg+='\n'+buildFeederTieupText();
+  
+  document.getElementById('sh-out').textContent=msg;
+  document.getElementById('sh-out-wrap').style.display='block';
+  document.getElementById('sh-out-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+// ══════════ FEEDER SECTION ══════════
+function initFeeder(){
+  document.getElementById('f-date').value=autoDate();
+  document.getElementById('f-time').value=autoTime();
+  buildFeederAreas();
+  buildTieup();
+}
+
+function buildFeederAreas(){
+  ['fbd','flc'].forEach(type=>{
+    const label=type==='fbd'?'BD':'LC';
+    const el=document.getElementById(`${type}-areas`);
+    el.innerHTML=AREAS.map(area=>`
+      <div class="area-block">
+        <div class="area-hdr">
+          <span class="area-name">📍 ${area}</span>
+          <button class="btn btn-sm btn-o" onclick="addFeederEntry('${type}','${area}')">+ Add</button>
+        </div>
+        <div id="${type}-entries-${area}"><div style="color:var(--text3);font-size:10px">NIL</div></div>
+      </div>`).join('');
+  });
+}
+
+function addFeederEntry(type,area){
+  const key=`${type}-${area}`,idx=++feederCount;
+  feederEntries[key].push(idx);
+  renderFeederEntries(type,area);
+}
+function removeFeederEntry(type,area,idx){
+  const key=`${type}-${area}`;
+  feederEntries[key]=feederEntries[key].filter(i=>i!==idx);
+  renderFeederEntries(type,area);
+}
+function renderFeederEntries(type,area){
+  const key=`${type}-${area}`,entries=feederEntries[key];
+  const c=document.getElementById(`${type}-entries-${area}`);
+  if(!entries.length){c.innerHTML=`<div style="color:var(--text3);font-size:10px">NIL</div>`;return;}
+  c.innerHTML=entries.map((idx,i)=>`
+    <div class="fe-entry">
+      <div class="fe-hdr">
+        <span style="font-size:9px;color:var(--text2)">Entry ${i+1}</span>
+        <button class="btn-xs btn-xs-red" onclick="removeFeederEntry('${type}','${area}',${idx})">✕</button>
+      </div>
+      <div class="g2" style="margin-bottom:6px">
+        <div><label class="lbl">Feeder Description</label>
+          <textarea id="fe-desc-${idx}" placeholder="Feeder name / details..." rows="2"></textarea></div>
+        <div>
+          <div class="field"><label class="lbl">Date</label><input type="text" id="fe-date-${idx}" placeholder="28-03-26"/></div>
+          <div><label class="lbl">WTG Count</label><input type="number" id="fe-wtg-${idx}" placeholder="10" min="0"/></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── TIEUP ──
+function buildTieup(){
+  const c=document.getElementById('tieup-container');c.innerHTML='';
+  tieupList.forEach((_,i)=>{
+    const d=document.createElement('div');d.id=`tu-${i}`;c.appendChild(d);renderTieupEntry(i);
+  });
+}
+function addTieup(){
+  tieupList.push({area:AREAS[0],fc:1,desc:'',date:'',wc:0});
+  const c=document.getElementById('tieup-container'),d=document.createElement('div');
+  d.id=`tu-${tieupList.length-1}`;c.appendChild(d);renderTieupEntry(tieupList.length-1);
+}
+function removeTieup(i){tieupList.splice(i,1);buildTieup();}
+function renderTieupEntry(i){
+  const e=tieupList[i],el=document.getElementById(`tu-${i}`);if(!el)return;
+  el.innerHTML=`
+    <div class="tu-entry">
+      <div class="fe-hdr">
+        <span style="font-size:9px;font-weight:700;color:var(--green)">Tie-up ${i+1}</span>
+        <button class="btn-xs btn-xs-red" onclick="removeTieup(${i})">✕</button>
+      </div>
+      <div class="g2" style="margin-bottom:6px">
+        <div><label class="lbl">Area</label>
+          <select id="tu-area-${i}">${AREAS.map(a=>`<option${a===e.area?' selected':''}>${a}</option>`).join('')}</select></div>
+        <div class="g2">
+          <div><label class="lbl">Feeders</label><input type="number" id="tu-fc-${i}" value="${e.fc}" min="1"/></div>
+          <div><label class="lbl">WTGs</label><input type="number" id="tu-wc-${i}" value="${e.wc}" min="0"/></div>
+        </div>
+      </div>
+      <div class="field"><label class="lbl">Description</label><textarea id="tu-desc-${i}" rows="2">${e.desc}</textarea></div>
+      <div><label class="lbl">Date</label><input type="text" id="tu-date-${i}" value="${e.date}" placeholder="28-02-26"/></div>
+    </div>`;
+}
+function buildTieupFromDOM(){
+  tieupList.forEach((e,i)=>{
+    e.area=document.getElementById(`tu-area-${i}`)?.value||e.area;
+    e.fc=+document.getElementById(`tu-fc-${i}`)?.value||e.fc;
+    e.wc=+document.getElementById(`tu-wc-${i}`)?.value||e.wc;
+    e.desc=document.getElementById(`tu-desc-${i}`)?.value||e.desc;
+    e.date=document.getElementById(`tu-date-${i}`)?.value||e.date;
+  });
+}
+
+function buildFeederTieupText(){
+  buildTieupFromDOM();
+  const tuTotal=tieupList.reduce((s,e)=>s+e.fc,0);
+  const tuWtgs=tieupList.reduce((s,e)=>s+e.wc,0);
+  
+  let msg=`*Feeder tie-up :${pad2(tuTotal)} [${tuWtgs} WTGs]*\n`;
+  const tuByArea={};
+  tieupList.forEach(e=>{if(!tuByArea[e.area])tuByArea[e.area]=[];tuByArea[e.area].push(e);});
+  for(const[area,entries]of Object.entries(tuByArea)){
+    const afc=entries.reduce((s,e)=>s+e.fc,0);
+    msg+=`\n*${area} - ${pad2(afc)}*\n`;
+    entries.forEach((e,i)=>{msg+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wc} WTGs\n`;});
+  }
+  return msg;
+}
+
+function genFeederMsg(){
+  buildTieupFromDOM();
+  const date=document.getElementById('f-date').value;
+  const time=document.getElementById('f-time').value;
+  
+  function getManual(type,area){
+    const key=`${type}-${area}`;
+    return feederEntries[key].map(idx=>({
+      desc:(document.getElementById(`fe-desc-${idx}`)?.value||'').trim(),
+      date:(document.getElementById(`fe-date-${idx}`)?.value||'').trim(),
+      wtg:+(document.getElementById(`fe-wtg-${idx}`)?.value||0),
+    })).filter(e=>e.desc);
+  }
+  
+  let bdTotal=0,bdWtgs=0,lcTotal=0,lcWtgs=0;
+  AREAS.forEach(a=>{
+    const bd=getManual('fbd',a),lc=getManual('flc',a);
+    bdTotal+=bd.length;bdWtgs+=bd.reduce((s,e)=>s+e.wtg,0);
+    lcTotal+=lc.length;lcWtgs+=lc.reduce((s,e)=>s+e.wtg,0);
+  });
+  const tuTotal=tieupList.reduce((s,e)=>s+e.fc,0);
+  const tuWtgs=tieupList.reduce((s,e)=>s+e.wc,0);
+  
+  let msg=`*TN Above 06 Hrs Stoppage Feeder Status*\n\n`;
+  msg+=`*Date : ${date}*\n*Time : ${time}*\n\n`;
+  msg+=`*Feeder BD : ${pad2(bdTotal)} [ ${pad2(bdWtgs)} WTGs]*\n`;
+  msg+=`*Feeder LC : ${pad2(lcTotal)} [ ${pad2(lcWtgs)} WTGs]*\n`;
+  
+  AREAS.forEach(a=>{
+    const bd=getManual('fbd',a);
+    if(bd.length){msg+=`\n*${a} - ${bd.length}*\n`;bd.forEach((e,i)=>{msg+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;})}
+    else{msg+=`\n*${a} - NIL*\n`;}
+  });
+  msg+='\n';
+  
+  const anyLC=AREAS.some(a=>getManual('flc',a).length>0);
+  if(anyLC){AREAS.forEach(a=>{const lc=getManual('flc',a);if(lc.length){msg+=`\n*${a} LC - ${lc.length}*\n`;lc.forEach((e,i)=>{msg+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;})}});msg+='\n';}
+  
+  msg+=buildFeederTieupText();
+  
+  document.getElementById('f-out').textContent=msg;
+  document.getElementById('feeder-out-wrap').style.display='block';
+  document.getElementById('feeder-out-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+// ══════════ COPY ══════════
+function copyOut(outId,btnId,orig){
+  const text=document.getElementById(outId).textContent;
+  const btn=document.getElementById(btnId);
+  const ok=()=>{
+    btn.textContent='✅ Copied!';
+    document.getElementById(outId).classList.add('copy-flash');
+    setTimeout(()=>{
+      btn.textContent=orig;
+      document.getElementById(outId).classList.remove('copy-flash');
+    },2000);
+  };
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(text).then(ok).catch(()=>fallbackCopy(text,ok));
+  }else{fallbackCopy(text,ok);}
+}
+function fallbackCopy(text,ok){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');ok();}catch{alert('Copy manually pannu');}
+  document.body.removeChild(ta);
+}
+
+// ══════════ LOADING / TOAST ══════════
+function showLoading(msg){
+  document.getElementById('loading-text').textContent=msg||'Processing...';
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading(){document.getElementById('loading').classList.remove('show');}
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText=`
+    position:fixed;bottom:24px;right:24px;z-index:9999;
+    background:var(--s1);border:1px solid var(--amber);border-radius:6px;
+    padding:10px 18px;font-size:11px;color:var(--amber);
+    animation:slideIn .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.5)
+  `;
+  t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+// ══════════ INIT ══════════
+loadState();
+initFeeder();
+updateStats();
+// Keyboard shortcut: Ctrl+S = Save
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveAll();}});
+</script>
+</body>
+</html>
