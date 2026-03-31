@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TN Wind Farm Report Generator Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0d14;--surface:#111622;--surface2:#151c2b;--surface3:#0f1420;
+  --border:#232c40;--accent:#ffb21c;--accent2:#3ad17c;--accent3:#53a8ff;
+  --text:#e8edf7;--muted:#8a96b2;--danger:#ff6b6b;--shadow:0 10px 30px rgba(0,0,0,.25);
+}
+body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,#090c13 0%,#0d111a 100%);color:var(--text);min-height:100vh;}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:#293249;border-radius:10px}
+header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;background:rgba(17,22,34,.92);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);letter-spacing:.03em}.logo span{color:var(--text)}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:2px}
+.top-pill{font-size:11px;color:#0b111c;background:linear-gradient(135deg,var(--accent2),#6ff3aa);padding:8px 12px;border-radius:999px;font-weight:800;white-space:nowrap}
+.main-tabs{display:flex;border-bottom:1px solid var(--border);background:rgba(17,22,34,.75);backdrop-filter:blur(8px);position:sticky;top:72px;z-index:9}
+.main-tab{flex:1;background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:12px;font-weight:800;padding:15px;letter-spacing:.08em;text-transform:uppercase;transition:all .2s}
+.main-tab.active{border-bottom-color:var(--accent);color:var(--accent);background:rgba(255,178,28,.05)}
+.sub-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto;background:rgba(10,13,20,.55)}
+.sub-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:10px;font-weight:800;letter-spacing:.1em;padding:12px 14px;text-transform:uppercase;transition:all .2s;white-space:nowrap}
+.sub-tab.active{border-bottom-color:var(--accent2);color:var(--accent2)}
+.sub-tab .n{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#20283b;font-size:9px;margin-right:6px}
+.sub-tab.active .n{background:var(--accent2);color:#00150a}
+.content{max-width:1080px;margin:0 auto;padding:22px}
+.panel{display:none}.panel.active{display:block}
+.card{background:linear-gradient(180deg,var(--surface) 0%,var(--surface3) 100%);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';display:inline-block;width:4px;height:14px;background:var(--accent);border-radius:99px}
+.card-title.green{color:var(--accent2)}.card-title.green::before{background:var(--accent2)}
+.card-title.blue{color:var(--accent3)}.card-title.blue::before{background:var(--accent3)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:760px){.g2,.g3{grid-template-columns:1fr}.content{padding:16px}header{top:0}.main-tabs{top:74px}}
+.field{margin-bottom:12px}
+label.lbl{display:block;font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;font-weight:700}
+input[type=text],input[type=number],select,textarea,input[type=search]{width:100%;background:#0b1019;border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:inherit;font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s, box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,178,28,.08)}
+select option{background:var(--surface)}input::placeholder,textarea::placeholder{color:#6c7895}textarea{resize:vertical;min-height:72px}
+.upload-zone{border:2px dashed #2a344b;border-radius:16px;padding:28px 18px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:rgba(255,255,255,.01)}
+.upload-zone:hover{border-color:var(--accent);background:rgba(255,178,28,.04)}.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-ok{border-color:var(--accent2)!important;background:rgba(58,209,124,.06)!important}.upload-icon{font-size:28px;margin-bottom:8px}.upload-title{font-size:13px;font-weight:800;color:var(--text)}.upload-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;padding:11px 18px;transition:all .18s;letter-spacing:.02em}
+.btn-a{background:linear-gradient(135deg,var(--accent),#ffc54f);color:#1b1402}.btn-a:hover{transform:translateY(-1px)}
+.btn-g{background:linear-gradient(135deg,var(--accent2),#78efaa);color:#04110a}.btn-g:hover{transform:translateY(-1px)}
+.btn-o{background:transparent;border:1px solid rgba(255,178,28,.45);color:var(--accent)}.btn-o:hover{background:rgba(255,178,28,.08)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{border-color:#3a4765;color:var(--text)}
+.btn-full{width:100%}.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.btn-sm{padding:6px 12px;font-size:11px}.btn-danger{background:transparent;border:1px solid rgba(255,107,107,.45);color:var(--danger);border-radius:8px;cursor:pointer;font-family:inherit;font-size:10px;padding:5px 10px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:linear-gradient(180deg,#121a28 0%,#0d1320 100%);border:1px solid var(--border);border-radius:16px;padding:14px 16px;min-width:90px;box-shadow:var(--shadow)}
+.stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent)}.stat-label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.tbl-wrap{overflow:auto;margin-bottom:12px;border:1px solid var(--border);border-radius:14px}table{width:100%;border-collapse:collapse;font-size:11px;min-width:900px}
+th{background:#121a28;color:var(--accent);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:10px 10px;text-align:left;border-bottom:1px solid var(--border)}td{padding:9px 10px;border-bottom:1px solid #1f2940;color:var(--text);vertical-align:top}tr:hover td{background:rgba(255,178,28,.03)}
+.tag{display:inline-block;font-size:10px;border-radius:999px;padding:4px 8px;font-weight:700}.tag-r{background:rgba(255,107,107,.14);color:var(--danger)}.tag-g{background:rgba(58,209,124,.12);color:var(--accent2)}.tag-a{background:rgba(255,178,28,.12);color:var(--accent)}
+.out-box{background:#0a0f18;border:1px solid var(--border);border-radius:18px;padding:18px}.out-lbl{font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px}.out-text{white-space:pre-wrap;font-size:13px;line-height:2;color:var(--text)}
+.info{background:rgba(255,178,28,.06);border:1px solid rgba(255,178,28,.2);border-radius:14px;padding:12px 14px;font-size:12px;color:#e7c05e;margin-bottom:12px;line-height:1.7}
+.area-block,.tieup-entry,.feeder-entry{background:#0b1019;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}.area-header,.tieup-hdr,.feeder-entry-hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.area-name{font-size:12px;font-weight:800;color:var(--accent);letter-spacing:.04em}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(83,168,255,.1);color:var(--accent3);border:1px solid rgba(83,168,255,.25);border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800}
+.search-row{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:12px;margin-bottom:14px}@media(max-width:760px){.search-row{grid-template-columns:1fr}}
+.small-note{font-size:11px;color:var(--muted)}
+.warn{color:#ffce66;font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">TN <span>WIND FARM</span></div>
+    <div class="logo-sub">Report Generator Pro — WTG + Feeder</div>
+  </div>
+  <div class="top-pill">⚡ Official WhatsApp Report Format</div>
+</header>
+
+<div class="main-tabs">
+  <button class="main-tab active" onclick="mainTab('wtg')" id="mtab-wtg">⚡ WTG Stoppage</button>
+  <button class="main-tab" onclick="mainTab('feeder')" id="mtab-feeder">🔌 Feeder Status</button>
+</div>
+
+<div id="section-wtg">
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="wtgStep(1)" id="wt1"><span class="n">1</span>Upload</button>
+    <button class="sub-tab" onclick="wtgStep(2)" id="wt2"><span class="n">2</span>Map Columns</button>
+    <button class="sub-tab" onclick="wtgStep(3)" id="wt3"><span class="n">3</span>Preview</button>
+    <button class="sub-tab" onclick="wtgStep(4)" id="wt4"><span class="n">4</span>Generate</button>
+  </div>
+  <div class="content">
+    <div class="panel active" id="wp1">
+      <div class="card">
+        <div class="card-title">Daily Report Excel (5 Area Sheets)</div>
+        <div class="info">📋 Bogampatti, Devarkulam, Muthayampatty, Radhapuram, Viliseri sheets irukka daily stoppage Excel upload pannunga. All sheets auto-read aagum.</div>
+        <div class="upload-zone" id="daily-zone">
+          <input type="file" id="daily-file" accept=".xlsx,.xls" onchange="loadDailyExcel(this.files[0])"/>
+          <div class="upload-icon">📊</div>
+          <div class="upload-title" id="daily-title">Daily Report Excel</div>
+          <div class="upload-sub">Click or drag .xlsx file</div>
+        </div>
+        <div id="daily-sheets" style="margin-top:10px;font-size:12px;color:var(--muted);"></div>
+        <div id="daily-warning" class="warn"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title green">Master Data Excel (Model / WTG → kW)</div>
+        <div class="info">🗂️ WTG ID / Model → Capacity (kW) mapping irukka master file upload pannunga. Optional but recommended.</div>
+        <div class="upload-zone" id="master-zone">
+          <input type="file" id="master-file" accept=".xlsx,.xls" onchange="loadMasterExcel(this.files[0])"/>
+          <div class="upload-icon">🗃️</div>
+          <div class="upload-title" id="master-title">Master Data Excel</div>
+          <div class="upload-sub">Click or drag .xlsx file</div>
+        </div>
+        <div id="master-info" style="margin-top:10px;font-size:12px;color:var(--muted);"></div>
+      </div>
+
+      <button class="btn btn-a btn-full" id="w1-next" style="display:none" onclick="buildWtgColMap();wtgStep(2)">Next: Map Columns →</button>
+    </div>
+
+    <div class="panel" id="wp2">
+      <div class="card">
+        <div class="card-title">Daily Report — Column Mapping</div>
+        <div class="info">📌 Auto-guess pannirukkom. Check pannitu correct columns select pannunga.</div>
+        <div class="g2" id="wtg-col-map"></div>
+      </div>
+      <div class="card">
+        <div class="card-title green">Master Data — Column Mapping</div>
+        <div class="g2" id="master-col-map"></div>
+      </div>
+      <div class="card">
+        <div class="card-title blue">Report Settings</div>
+        <div class="g3">
+          <div><label class="lbl">Min Stop Hours</label><input type="number" id="w-minhrs" value="6" min="1"/></div>
+          <div><label class="lbl">Report Date</label><input type="text" id="w-date"/></div>
+          <div><label class="lbl">Report Time</label><input type="text" id="w-time"/></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="wtgStep(1)">← Back</button>
+        <button class="btn btn-a" onclick="processWtgs()">Preview WTGs →</button>
+      </div>
+    </div>
+
+    <div class="panel" id="wp3">
+      <div class="stats" id="w-stats"></div>
+      <div class="card">
+        <div class="card-title blue">Search & Filter</div>
+        <div class="search-row">
+          <div><label class="lbl">Search</label><input type="search" id="wtg-search" placeholder="WTG ID / Error / Customer / Area..." oninput="renderWtgTable()"/></div>
+          <div><label class="lbl">Area Filter</label><select id="wtg-area-filter" onchange="renderWtgTable()"><option value="">All Areas</option></select></div>
+          <div><label class="lbl">Customer Filter</label><select id="wtg-customer-filter" onchange="renderWtgTable()"><option value="">All Customers</option></select></div>
+        </div>
+        <div class="small-note" id="w-preview-note"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Filtered WTGs Preview</div>
+        <div class="tbl-wrap"><table><thead><tr id="w-thead"></tr></thead><tbody id="w-tbody"></tbody></table></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="wtgStep(2)">← Back</button>
+        <button class="btn btn-a" onclick="genWtgMsg();wtgStep(4)">Generate Report →</button>
+      </div>
+    </div>
+
+    <div class="panel" id="wp4">
+      <div class="btn-row">
+        <button class="btn btn-a" id="w-copy-btn" onclick="copyText('w-out','w-copy-btn','📋 Copy WTG Report')">📋 Copy WTG Report</button>
+        <button class="btn btn-ghost" onclick="wtgStep(3)">← Edit</button>
+      </div>
+      <div class="out-box"><div class="out-lbl">WTG Stoppage Message</div><div class="out-text" id="w-out"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="section-feeder" style="display:none;">
+  <div class="content">
+    <div class="card">
+      <div class="card-title blue">Report Header</div>
+      <div class="g3">
+        <div><label class="lbl">Date</label><input type="text" id="f-date"/></div>
+        <div><label class="lbl">Time</label><input type="text" id="f-time"/></div>
+        <div style="display:flex;align-items:end;"><span class="badge">Professional WhatsApp Format</span></div>
+      </div>
+    </div>
+
+    <div class="card"><div class="card-title">Feeder BD (6hr+)</div><div id="fbd-areas"></div></div>
+    <div class="card"><div class="card-title">Feeder LC (6hr+)</div><div id="flc-areas"></div></div>
+
+    <div class="card">
+      <div class="card-title green">Feeder Tie-up (Default Pre-filled)</div>
+      <div class="info">ℹ️ Default entries pre-filled irukku. Edit / Add / Remove pannalaam. Feeder count & WTG count auto-calculate aagum.</div>
+      <div id="tieup-container"></div>
+      <button class="btn btn-o btn-sm" onclick="addTieup()">+ Add Tie-up Entry</button>
+    </div>
+
+    <div class="btn-row" style="margin-top:4px;">
+      <button class="btn btn-g btn-full" onclick="genFeederMsg()">Generate Feeder Report →</button>
+    </div>
+
+    <div id="feeder-out-wrap" style="display:none;">
+      <div class="btn-row"><button class="btn btn-g" id="f-copy-btn" onclick="copyText('f-out','f-copy-btn','📋 Copy Feeder Report')">📋 Copy Feeder Report</button></div>
+      <div class="out-box"><div class="out-lbl">Feeder Status Message</div><div class="out-text" id="f-out"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const AREAS = ["Bogampatti","Devarkulam","Muthayampatty","Radhapuram","Viliseri"];
+const DEFAULT_TIEUP = [
+  { area:"Muthayampatty", feederCount:3, desc:"Marudur 22kv SS Power transformer 5 - [Bakkiyalakshmi 22KV, Karvembu 22KV, SIL 22kV] - Feeders tie-up with Marudur 22kv SS Power transformer 4", date:"14-12-25", wtgCount:14 },
+  { area:"Muthayampatty", feederCount:2, desc:"Ponnapuram 33kv SS Power transformer 6 - [Ponnapuram - Madathuppalayam 33KV, Suzlon 33KV 1] - Feeders tie-up with Sadayapalayam 33kv SS - Sadayapalayam - Rohit 33KV Feeder", date:"24-12-25", wtgCount:32 },
+  { area:"Viliseri", feederCount:1, desc:"Chandragiri Feeder 1 tie-up with Feeder 4", date:"28-02-26", wtgCount:12 },
+  { area:"Viliseri", feederCount:1, desc:"Chandragiri Feeder 2 tie-up with Feeder 3", date:"28-02-26", wtgCount:12 },
+];
+
+let dailyWB=null, masterWB=null;
+let dailyHeaders=[], masterHeaders=[];
+let allRows=[], masterRows=[];
+let filteredWTGs=[], previewWTGs=[];
+let tieupEntries=[...DEFAULT_TIEUP.map(e=>({...e}))];
+let feederEntries={};
+AREAS.forEach(a=>{feederEntries[`fbd-${a}`]=[];feederEntries[`flc-${a}`]=[];});
+let feederEntryCount=0;
+
+function autoDate(){const now=new Date();const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const d=String(now.getDate()).padStart(2,"0");return `${d}-${months[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`;}
+function autoTime(){const now=new Date();return now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");}
+function pad2(n){return String(n).padStart(2,"0");}
+function parseDur(val){if(!val)return 0;val=val.toString().toLowerCase();const m=val.match(/(\d+\.?\d*)\s*h/);if(m)return parseFloat(m[1]);if(!isNaN(val))return parseFloat(val);return 0;}
+function fmtOccurred(val){if(!val)return{date:"",time:""};val=val.toString().trim();const parts=val.split(/\s+/);let datePart=parts[0]||"",timePart=(parts[1]||"").slice(0,5);const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];const dm=datePart.match(/^(\d{2})-(\d{2})-(\d{4})$/);if(dm){const mon=months[parseInt(dm[2])-1]||dm[2];datePart=`${dm[1]}-${mon}-${dm[3].slice(2)}`;}return{date:datePart,time:timePart};}
+function getRowVal(row,colId){const col=document.getElementById(colId)?.value;return col?(row[col]||"").toString().trim():"";}
+function guessCol(headers,patterns){for(const p of patterns){const h=headers.find(h=>h.toLowerCase().includes(p.toLowerCase()));if(h)return h;}return "";}
+function cleanText(text){if(!text) return "";return text.toString().replace(/\s+/g," ").replace(/ ?\/ ?/g," / ").replace(/ ?- ?/g," - ").replace(/ ?_ ?/g," _ ").replace(/\bkv\b/gi,"kV").replace(/\bss\b/gi,"SS").replace(/\bwtg\b/gi,"WTG").replace(/\bwips?\b/gi,"WIP").replace(/\bno response\b/gi,"No Response").replace(/\bissue\b/gi,"Issue").replace(/\btheft\b/gi,"Theft").replace(/\bmanual stop\b/gi,"Manual Stop").replace(/\bblade maintenance\b/gi,"Blade Maintenance").replace(/\btroubleshooting\b/gi,"Troubleshooting").replace(/\bplanned\b/gi,"Planned").replace(/\bcustomer request\b/gi,"Customer Request").replace(/\bcustomer clearance\b/gi,"Customer Clearance").replace(/\bgearbox\b/gi,"Gearbox").replace(/\boilpump\b/gi,"Oil Pump").replace(/\bbatterychange\b/gi,"Battery Change").replace(/\bcurrent asymmetry\b/gi,"Current Asymmetry").replace(/\bthyristor replacement\b/gi,"Thyristor Replacement").replace(/\belec\b/gi,"Elec").replace(/\byawsensor\b/gi,"Yaw Sensor").replace(/\berrstop\b/gi,"Err Stop").replace(/\brotorpositionnotvalid\b/gi,"Rotor Position Not Valid").replace(/\bdfig\b/gi,"DFIG").replace(/\bups\b/gi,"UPS").replace(/\bakku3\b/gi,"Akku3").replace(/\bpower transformer\b/gi,"Power Transformer").trim();}
+function copyText(outId,btnId,original){const text=document.getElementById(outId).textContent;const btn=document.getElementById(btnId);const flash=()=>{btn.textContent="✅ Copied!";setTimeout(()=>btn.textContent=original,2200);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(flash);}else{const ta=document.createElement("textarea");ta.value=text;ta.style.cssText="position:fixed;top:0;left:0;opacity:0;";document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand("copy");flash();}catch(e){alert("Copy manually pannunga");}document.body.removeChild(ta);}}
+function makeColSelect(id,headers,guess,label,required=false){const opts=headers.map(h=>`<option value="${h}"${h===guess?" selected":""}>${h}</option>`).join("");return`<div><label class="lbl">${required?'<span style="color:var(--danger)">*</span> ':''}${label}</label><select id="${id}"><option value="">-- Skip --</option>${opts}</select></div>`;}
+
+function loadDailyExcel(file){if(!file)return;const r=new FileReader();r.onload=e=>{dailyWB=XLSX.read(e.target.result,{type:"array",cellDates:true});allRows=[];dailyWB.SheetNames.forEach(sn=>{const ws=dailyWB.Sheets[sn];const rows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});rows.forEach(row=>allRows.push({...row,__sheet:sn}));});dailyHeaders=allRows.length?Object.keys(allRows[0]).filter(k=>k!=="__sheet"):[];document.getElementById("daily-title").textContent="✅ "+file.name;document.getElementById("daily-zone").classList.add("upload-ok");document.getElementById("daily-sheets").textContent=`${dailyWB.SheetNames.join(" · ")} — ${allRows.length} rows total`;const badSheets=dailyWB.SheetNames.filter(s=>!AREAS.includes(s));document.getElementById("daily-warning").textContent=badSheets.length?`⚠️ Non-standard sheet names found: ${badSheets.join(", ")}`:"";checkW1();};r.readAsArrayBuffer(file);}
+function loadMasterExcel(file){if(!file)return;const r=new FileReader();r.onload=e=>{masterWB=XLSX.read(e.target.result,{type:"array",cellDates:true});const ws=masterWB.Sheets[masterWB.SheetNames[0]];masterRows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});masterHeaders=masterRows.length?Object.keys(masterRows[0]):[];document.getElementById("master-title").textContent="✅ "+file.name;document.getElementById("master-zone").classList.add("upload-ok");document.getElementById("master-info").textContent=`${masterRows.length} WTG records loaded`;checkW1();};r.readAsArrayBuffer(file);}
+function checkW1(){if(dailyWB)document.getElementById("w1-next").style.display="block";}
+
+function buildWtgColMap(){const h=dailyHeaders;document.getElementById("wtg-col-map").innerHTML=makeColSelect("wc_id",h,guessCol(h,["location no","wtg id","wtg","id","unit"]),"WTG ID",true)+makeColSelect("wc_area",h,guessCol(h,["area","location","zone"]),"Area",true)+makeColSelect("wc_customer",h,guessCol(h,["customer","owner","client"]),"Customer",true)+makeColSelect("wc_error",h,guessCol(h,["error details","error","fault","description"]),"Error Details",true)+makeColSelect("wc_occurred",h,guessCol(h,["error occurred","occurred","start time","date"]),"Error Occurred",true)+makeColSelect("wc_duration",h,guessCol(h,["current duration","duration","hrs"]),"Current Duration",true)+makeColSelect("wc_status",h,guessCol(h,["status","state"]),"Status")+makeColSelect("wc_model",h,guessCol(h,["model","wtg model","type"]),"WTG Model");
+if(masterRows.length){const mh=masterHeaders;document.getElementById("master-col-map").innerHTML=makeColSelect("mc_key",mh,guessCol(mh,["wtg id","id","location","model","wtg model"]),"WTG ID / Model (lookup key)",true)+makeColSelect("mc_kw",mh,guessCol(mh,["kw","capacity","power","rated"]),"Capacity (kW)",true);} else {document.getElementById("master-col-map").innerHTML=`<div style="font-size:12px;color:var(--muted);grid-column:1/-1;">Master file not uploaded — kW column will be blank.</div>`;}document.getElementById("w-date").value=autoDate();document.getElementById("w-time").value=autoTime();}
+
+function buildKwMap(){const map={};if(!masterRows.length)return map;const keyCol=document.getElementById("mc_key")?.value;const kwCol=document.getElementById("mc_kw")?.value;if(!keyCol||!kwCol)return map;masterRows.forEach(r=>{const k=(r[keyCol]||"").toString().trim().toLowerCase();map[k]=(r[kwCol]||"").toString().trim();});return map;}
+
+function processWtgs(){const minHrs=parseFloat(document.getElementById("w-minhrs").value)||6;const statusCol=document.getElementById("wc_status")?.value;const kwMap=buildKwMap();const seen=new Set();let duplicates=0;filteredWTGs=allRows.filter(row=>{if(statusCol){const s=(row[statusCol]||"").toString().toLowerCase();if(s==="restored")return false;}return parseDur(getRowVal(row,"wc_duration"))>=minHrs;}).filter(row=>{const key=`${getRowVal(row,'wc_id')}|${getRowVal(row,'wc_occurred')}|${getRowVal(row,'wc_error')}`.toLowerCase();if(seen.has(key)){duplicates++;return false;}seen.add(key);return true;});
+filteredWTGs.forEach(row=>{const model=(getRowVal(row,"wc_model")||getRowVal(row,"wc_id")).toLowerCase();row.__kw=kwMap[model]||kwMap[getRowVal(row,"wc_id").toLowerCase()]||"";});
+const areas=[...new Set(filteredWTGs.map(r=>getRowVal(r,"wc_area")||r.__sheet))].filter(Boolean);const customers=[...new Set(filteredWTGs.map(r=>getRowVal(r,"wc_customer")))].filter(Boolean).sort();document.getElementById("wtg-area-filter").innerHTML=`<option value="">All Areas</option>`+AREAS.filter(a=>areas.includes(a)).map(a=>`<option>${a}</option>`).join("");document.getElementById("wtg-customer-filter").innerHTML=`<option value="">All Customers</option>`+customers.map(c=>`<option>${c}</option>`).join("");
+let totalKW=filteredWTGs.reduce((s,r)=>s+(parseFloat(r.__kw)||0),0);let missingKW=filteredWTGs.filter(r=>!r.__kw).length;document.getElementById("w-stats").innerHTML=`<div class="stat"><div class="stat-val">${filteredWTGs.length}</div><div class="stat-label">WTGs Stopped</div></div><div class="stat"><div class="stat-val">${areas.length}</div><div class="stat-label">Locations</div></div><div class="stat"><div class="stat-val">${totalKW}</div><div class="stat-label">Total kW</div></div><div class="stat"><div class="stat-val">${(totalKW/1000).toFixed(2)}</div><div class="stat-label">Total MW</div></div>`;document.getElementById("w-preview-note").textContent=`Duplicates removed: ${duplicates} | Missing kW: ${missingKW}`;renderWtgTable();wtgStep(3);}
+
+function renderWtgTable(){const search=(document.getElementById('wtg-search')?.value||'').toLowerCase().trim();const areaFilter=document.getElementById('wtg-area-filter')?.value||'';const custFilter=document.getElementById('wtg-customer-filter')?.value||'';previewWTGs=filteredWTGs.filter(row=>{const area=getRowVal(row,'wc_area')||row.__sheet||'';const cust=getRowVal(row,'wc_customer')||'';const blob=[getRowVal(row,'wc_id'),area,cust,getRowVal(row,'wc_error'),row.__kw].join(' ').toLowerCase();return (!search||blob.includes(search))&&(!areaFilter||area===areaFilter)&&(!custFilter||cust===custFilter);});
+const thead=document.getElementById('w-thead');const tbody=document.getElementById('w-tbody');thead.innerHTML=["WTG ID","Area","Error","Occurred","Duration","kW","Customer"].map(l=>`<th>${l}</th>`).join('');tbody.innerHTML=previewWTGs.map(row=>{const occ=fmtOccurred(getRowVal(row,'wc_occurred'));return`<tr><td><span class="tag tag-a">${cleanText(getRowVal(row,'wc_id'))}</span></td><td>${cleanText(getRowVal(row,'wc_area')||row.__sheet)}</td><td style="max-width:260px;word-break:break-word;">${cleanText(getRowVal(row,'wc_error'))}</td><td>${occ.date} ${occ.time}</td><td><span class="tag tag-r">${getRowVal(row,'wc_duration')}</span></td><td>${row.__kw||"<span style='color:#ffce66'>Missing</span>"}</td><td>${cleanText(getRowVal(row,'wc_customer'))}</td></tr>`;}).join('');}
+
+function genWtgMsg(){const date=document.getElementById("w-date").value;const time=document.getElementById("w-time").value;const sourceRows=previewWTGs.length?previewWTGs:filteredWTGs;const grouped={};sourceRows.forEach(row=>{const area=cleanText(getRowVal(row,"wc_area")||row.__sheet||"Unknown");if(!grouped[area])grouped[area]=[];grouped[area].push(row);});const orderedAreas=AREAS.filter(a=>grouped[a]?.length);let totalKW=0;sourceRows.forEach(row=>{const kw=parseFloat(row.__kw)||0;totalKW+=kw;});let msg=`*TN Above 06 Hrs Stoppage WTGs Status:*\n\n`;msg+=`*Date : ${date}*\n`;msg+=`*Time : ${time}*\n`;msg+=`*Total WTGs : ${sourceRows.length}*\n`;if(totalKW>0){msg+=`*Total Capacity : ${totalKW} kW (${(totalKW/1000).toFixed(2)} MW)*\n`;}
+orderedAreas.forEach(area=>{const rows=grouped[area];msg+=`\n*${area} - ${pad2(rows.length)}*\n`;rows.forEach((row,i)=>{const id=cleanText(getRowVal(row,"wc_id"));const err=cleanText(getRowVal(row,"wc_error"));const kw=row.__kw?cleanText(row.__kw):"-";const cust=cleanText(getRowVal(row,"wc_customer"));const occ=fmtOccurred(getRowVal(row,"wc_occurred"));msg+=`\n*${i+1}.* ${id} _ ${err} _ ${kw} _ ${occ.date} _ ${occ.time} _ *${cust}*\n`;});});document.getElementById("w-out").textContent=msg;}
+
+function initFeeder(){document.getElementById("f-date").value=autoDate();document.getElementById("f-time").value=autoTime();buildFeederAreas();buildTieup();}
+function buildFeederAreas(){["fbd","flc"].forEach(type=>{const el=document.getElementById(`${type}-areas`);el.innerHTML=AREAS.map(area=>`<div class="area-block" id="${type}-${area}"><div class="area-header"><span class="area-name">📍 ${area}</span><button class="btn btn-sm btn-o" onclick="addFeederEntry('${type}','${area}')">+ Add Feeder</button></div><div id="${type}-entries-${area}" style="color:var(--muted);font-size:12px;">NIL — No active feeders</div></div>`).join("");});}
+function addFeederEntry(type,area){const key=`${type}-${area}`;const idx=++feederEntryCount;feederEntries[key].push(idx);renderFeederEntries(type,area);}
+function removeFeederEntry(type,area,idx){const key=`${type}-${area}`;feederEntries[key]=feederEntries[key].filter(i=>i!==idx);renderFeederEntries(type,area);}
+function renderFeederEntries(type,area){const key=`${type}-${area}`;const container=document.getElementById(`${type}-entries-${area}`);const entries=feederEntries[key];if(!entries.length){container.innerHTML=`<div style="color:var(--muted);font-size:12px;">NIL — No active feeders</div>`;return;}container.innerHTML=entries.map((idx,i)=>`<div class="feeder-entry"><div class="feeder-entry-hdr"><span style="font-size:11px;color:var(--muted);">Feeder #${i+1}</span><button class="btn-danger" onclick="removeFeederEntry('${type}','${area}',${idx})">✕</button></div><div class="g2" style="margin-bottom:8px;"><div><label class="lbl">Feeder Description</label><textarea id="fe-desc-${idx}" placeholder="Feeder name / details..."></textarea></div><div><div class="field"><label class="lbl">Date</label><input type="text" id="fe-date-${idx}" placeholder="28-03-26"/></div><div class="field"><label class="lbl">WTG Count</label><input type="number" id="fe-wtg-${idx}" placeholder="10" min="0"/></div></div></div></div>`).join("");}
+
+function buildTieup(){const c=document.getElementById("tieup-container");c.innerHTML="";tieupEntries.forEach((_,i)=>renderTieupEntry(i));}
+function addTieup(){tieupEntries.push({area:AREAS[0],feederCount:1,desc:"",date:"",wtgCount:0});const c=document.getElementById("tieup-container");const div=document.createElement("div");div.id=`tu-${tieupEntries.length-1}`;c.appendChild(div);renderTieupEntry(tieupEntries.length-1);}
+function removeTieup(i){tieupEntries.splice(i,1);buildTieup();}
+function renderTieupEntry(i){const e=tieupEntries[i];const c=document.getElementById(`tu-${i}`)||(()=>{const d=document.createElement("div");d.id=`tu-${i}`;document.getElementById("tieup-container").appendChild(d);return d;})();c.innerHTML=`<div class="tieup-entry"><div class="tieup-hdr"><span style="font-size:11px;font-weight:800;color:var(--accent2);">Entry ${i+1}</span><button class="btn-danger" onclick="removeTieup(${i})">✕ Remove</button></div><div class="g2" style="margin-bottom:8px;"><div><label class="lbl">Area</label><select id="tu-area-${i}" onchange="tieupEntries[${i}].area=this.value">${AREAS.map(a=>`<option${a===e.area?" selected":""}>${a}</option>`).join("")}</select></div><div class="g2" style="gap:8px;"><div><label class="lbl">Feeder Count</label><input type="number" id="tu-fc-${i}" value="${e.feederCount}" min="1" onchange="tieupEntries[${i}].feederCount=+this.value"/></div><div><label class="lbl">WTG Count</label><input type="number" id="tu-wc-${i}" value="${e.wtgCount}" min="0" onchange="tieupEntries[${i}].wtgCount=+this.value"/></div></div></div><div class="field"><label class="lbl">Description</label><textarea id="tu-desc-${i}" onchange="tieupEntries[${i}].desc=this.value">${e.desc}</textarea></div><div><label class="lbl">Date</label><input type="text" id="tu-date-${i}" value="${e.date}" placeholder="28-02-26" onchange="tieupEntries[${i}].date=this.value"/></div></div>`;}
+
+function genFeederMsg(){tieupEntries.forEach((e,i)=>{e.area=document.getElementById(`tu-area-${i}`)?.value||e.area;e.feederCount=+document.getElementById(`tu-fc-${i}`)?.value||e.feederCount;e.wtgCount=+document.getElementById(`tu-wc-${i}`)?.value||e.wtgCount;e.desc=document.getElementById(`tu-desc-${i}`)?.value||e.desc;e.date=document.getElementById(`tu-date-${i}`)?.value||e.date;});const date=document.getElementById("f-date").value;const time=document.getElementById("f-time").value;function getAreaEntries(type,area){const key=`${type}-${area}`;return feederEntries[key].map(idx=>({desc:cleanText((document.getElementById(`fe-desc-${idx}`)?.value||"").trim()),date:cleanText((document.getElementById(`fe-date-${idx}`)?.value||"").trim()),wtg:+(document.getElementById(`fe-wtg-${idx}`)?.value||0),})).filter(e=>e.desc);}let bdCount=0,bdWtgs=0,lcCount=0,lcWtgs=0;AREAS.forEach(a=>{const bd=getAreaEntries("fbd",a);bdCount+=bd.length;bdWtgs+=bd.reduce((s,e)=>s+e.wtg,0);const lc=getAreaEntries("flc",a);lcCount+=lc.length;lcWtgs+=lc.reduce((s,e)=>s+e.wtg,0);});const tuTotal=tieupEntries.reduce((s,e)=>s+e.feederCount,0);const tuWtgs=tieupEntries.reduce((s,e)=>s+e.wtgCount,0);let msg=`*TN Above 06 Hrs Stoppage Feeder Status*\n\n`;msg+=`*Date : ${date}*\n`;msg+=`*Time : ${time}*\n\n`;msg+=`*Feeder BD : ${pad2(bdCount)} [${pad2(bdWtgs)} WTGs]*\n`;msg+=`*Feeder LC : ${pad2(lcCount)} [${pad2(lcWtgs)} WTGs]*\n`;AREAS.forEach(a=>{const entries=getAreaEntries("fbd",a);if(entries.length){msg+=`\n*${a} - ${pad2(entries.length)}*\n`;entries.forEach((e,i)=>{msg+=`\n${i+1}. ${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;});} else {msg+=`\n*${a} - NIL*\n`;}});const anyLC=AREAS.some(a=>getAreaEntries("flc",a).length>0);if(anyLC){msg+=`\n`;AREAS.forEach(a=>{const entries=getAreaEntries("flc",a);if(entries.length){msg+=`\n*${a} LC - ${pad2(entries.length)}*\n`;entries.forEach((e,i)=>{msg+=`\n${i+1}. ${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;});}});}msg+=`\n\n*Feeder Tie-up : ${pad2(tuTotal)} [${tuWtgs} WTGs]*\n`;const tuByArea={};tieupEntries.forEach(e=>{if(!e.desc?.trim())return;const area=cleanText(e.area);if(!tuByArea[area])tuByArea[area]=[];tuByArea[area].push({...e,desc:cleanText(e.desc),date:cleanText(e.date)});});AREAS.forEach(area=>{const entries=tuByArea[area];if(entries?.length){const afc=entries.reduce((s,e)=>s+e.feederCount,0);msg+=`\n\n*${area} - ${pad2(afc)}*\n`;entries.forEach((e,i)=>{msg+=`\n${i+1}. ${e.desc} _ ${e.date} _ ${e.wtgCount} WTGs\n`;});}});document.getElementById("f-out").textContent=msg;document.getElementById("feeder-out-wrap").style.display="block";document.getElementById("feeder-out-wrap").scrollIntoView({behavior:"smooth"});}
+
+function mainTab(t){document.getElementById("section-wtg").style.display=t==="wtg"?"block":"none";document.getElementById("section-feeder").style.display=t==="feeder"?"block":"none";document.getElementById("mtab-wtg").classList.toggle("active",t==="wtg");document.getElementById("mtab-feeder").classList.toggle("active",t==="feeder");}
+function wtgStep(n){[1,2,3,4].forEach(i=>{document.getElementById(`wp${i}`).classList.toggle("active",i===n);document.getElementById(`wt${i}`).classList.toggle("active",i===n);});}
+
+initFeeder();
+</script>
+</body>
+</html>
