@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TN Wind Farm Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--surface:#0e1219;--border:#1e2535;
+  --accent:#f0a500;--green:#3ecf6e;--blue:#4fa3e0;--red:#e05252;--purple:#a78bfa;
+  --text:#dde3f0;--muted:#5a6480;
+}
+body{font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--accent);}
+.logo span{color:var(--text);}
+.logo-sub{font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:2px;}
+
+.main-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);}
+.main-tab{flex:1;background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;padding:13px;letter-spacing:.08em;text-transform:uppercase;transition:all .2s;}
+.main-tab.active{border-bottom-color:var(--accent);color:var(--accent);background:rgba(240,165,0,.04);}
+
+.sub-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto;}
+.sub-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.1em;padding:11px 14px;text-transform:uppercase;transition:all .2s;white-space:nowrap;}
+.sub-tab.active{border-bottom-color:var(--green);color:var(--green);}
+.sub-tab .n{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);font-size:8px;margin-right:5px;}
+.sub-tab.active .n{background:var(--green);color:#000;}
+
+.content{max-width:960px;margin:0 auto;padding:20px;}
+.panel{display:none;}.panel.active{display:block;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';width:3px;height:12px;background:var(--accent);border-radius:2px;}
+.card-title.green{color:var(--green);}.card-title.green::before{background:var(--green);}
+.card-title.blue{color:var(--blue);}.card-title.blue::before{background:var(--blue);}
+.card-title.purple{color:var(--purple);}.card-title.purple::before{background:var(--purple);}
+.card-title.red{color:var(--red);}.card-title.red::before{background:var(--red);}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+
+label.lbl{display:block;font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:5px;}
+input[type=text],input[type=number],select,textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-family:inherit;font-size:12px;padding:8px 11px;outline:none;transition:border-color .2s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+select option{background:var(--surface);}
+input::placeholder,textarea::placeholder{color:var(--muted);}
+textarea{resize:vertical;min-height:50px;}
+.field{margin-bottom:12px;}
+
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.upload-zone:hover{border-color:var(--accent);background:rgba(240,165,0,.04);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-ok{border-color:var(--green)!important;background:rgba(62,207,110,.05)!important;}
+.upload-icon{font-size:24px;margin-bottom:6px;}
+.upload-title{font-size:12px;font-weight:700;color:var(--text);}
+.upload-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;padding:10px 18px;transition:all .18s;letter-spacing:.03em;}
+.btn-a{background:var(--accent);color:#000;}.btn-a:hover{background:#d4920a;transform:translateY(-1px);}
+.btn-g{background:var(--green);color:#000;}.btn-g:hover{background:#2fb85a;transform:translateY(-1px);}
+.btn-o{background:transparent;border:1px solid var(--accent);color:var(--accent);}.btn-o:hover{background:rgba(240,165,0,.08);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}.btn-ghost:hover{border-color:var(--text);color:var(--text);}
+.btn-red{background:transparent;border:1px solid var(--red);color:var(--red);}.btn-red:hover{background:rgba(224,82,82,.1);}
+.btn-full{width:100%;justify-content:center;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.btn-sm{padding:5px 11px;font-size:10px;}
+.btn-xs{padding:3px 8px;font-size:9px;border:1px solid;border-radius:4px;cursor:pointer;font-family:inherit;}
+.btn-xs-red{color:var(--red);border-color:var(--red);background:transparent;}
+.btn-xs-green{color:var(--green);border-color:var(--green);background:transparent;}
+.btn-xs-muted{color:var(--muted);border-color:var(--border);background:transparent;}
+
+.stats{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;flex:1;min-width:80px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);}
+.stat-label{font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
+
+.tbl-wrap{overflow-x:auto;margin-bottom:10px;}
+table{width:100%;border-collapse:collapse;font-size:10px;}
+th{background:#111825;color:var(--accent);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:8px 9px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:7px 9px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+tr.hidden-row td{opacity:.35;text-decoration:line-through;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.tag{display:inline-block;font-size:9px;border-radius:4px;padding:2px 7px;font-weight:700;}
+.tag-r{background:rgba(224,82,82,.15);color:var(--red);}
+.tag-a{background:rgba(240,165,0,.12);color:var(--accent);}
+.tag-g{background:rgba(62,207,110,.12);color:var(--green);}
+.tag-p{background:rgba(167,139,250,.12);color:var(--purple);}
+.tag-contract{background:rgba(224,82,82,.25);color:var(--red);border:1px solid rgba(224,82,82,.4);}
+
+.out-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.out-lbl{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;}
+.out-text{white-space:pre-wrap;font-size:12px;line-height:2;color:var(--text);}
+
+.info{background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.2);border-radius:8px;padding:10px 14px;font-size:11px;color:#c8a44a;margin-bottom:12px;line-height:1.7;}
+.info-blue{background:rgba(79,163,224,.06);border-color:rgba(79,163,224,.2);color:#7ab8d9;}
+.info-green{background:rgba(62,207,110,.06);border-color:rgba(62,207,110,.2);color:#6ed49a;}
+
+.reason-block{margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;}
+.reason-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;}
+.reason-row:last-child{margin-bottom:0;}
+
+.area-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;}
+.area-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.area-name{font-size:11px;font-weight:700;color:var(--accent);}
+
+.feeder-entry{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:12px;margin-bottom:8px;}
+.feeder-entry-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+
+.tieup-entry{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.tieup-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+
+.contract-badge{font-size:9px;background:rgba(224,82,82,.18);color:var(--red);border:1px solid rgba(224,82,82,.35);border-radius:4px;padding:2px 8px;margin-left:6px;}
+.hidden-count{font-size:10px;color:var(--red);margin-left:8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">SUZLON <span>SMS REPORT PORTAL</span></div>
+    <div class="logo-sub">WTG Stoppage + Feeder Status Generator</div>
+  </div>
+  <div style="text-align:right;">
+    <div id="live-date" style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.05em;"></div>
+    <div id="live-time" style="font-size:10px;color:var(--muted);letter-spacing:.08em;margin-top:2px;"></div>
+  </div>
+</header>
+
+<div class="main-tabs">
+  <button class="main-tab active" onclick="mainTab('wtg')" id="mtab-wtg">⚡ WTG Stoppage</button>
+  <button class="main-tab" onclick="mainTab('feeder')" id="mtab-feeder">🔌 Feeder Status</button>
+</div>
+
+<!-- ═══════════════ WTG SECTION ═══════════════ -->
+<div id="section-wtg">
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="wtgStep(1)" id="wt1"><span class="n">1</span>Upload</button>
+    <button class="sub-tab" onclick="wtgStep(2)" id="wt2"><span class="n">2</span>Map Columns</button>
+    <button class="sub-tab" onclick="wtgStep(3)" id="wt3"><span class="n">3</span>Preview</button>
+    <button class="sub-tab" onclick="wtgStep(4)" id="wt4"><span class="n">4</span>Output</button>
+  </div>
+  <div class="content">
+
+    <!-- STEP 1: UPLOAD -->
+    <div class="panel active" id="wp1">
+      <div class="card">
+        <div class="card-title">Daily Report Excel (5 Area Sheets)</div>
+        <div class="info">📋 5 area sheets + feeder sheet irukka Excel upload pannu. All sheets auto-read aagum.</div>
+        <div class="upload-zone" id="daily-zone">
+          <input type="file" id="daily-file" accept=".xlsx,.xls" onchange="loadDailyExcel(this.files[0])"/>
+          <div class="upload-icon">📊</div>
+          <div class="upload-title" id="daily-title">Daily Report Excel</div>
+          <div class="upload-sub">Click or drag .xlsx file</div>
+        </div>
+        <div id="daily-sheets" style="margin-top:10px;font-size:11px;color:var(--muted);"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title green">Master Data Excel (WTG → kW)</div>
+        <div class="info info-green">🗂️ WTG ID + Area/Site → kW mapping. Same model different area irundhalum correct kW edukum.</div>
+        <div class="upload-zone" id="master-zone">
+          <input type="file" id="master-file" accept=".xlsx,.xls" onchange="loadMasterExcel(this.files[0])"/>
+          <div class="upload-icon">🗃️</div>
+          <div class="upload-title" id="master-title">Master Data Excel</div>
+          <div class="upload-sub">Click or drag .xlsx file</div>
+        </div>
+        <div id="master-info" style="margin-top:10px;font-size:11px;color:var(--muted);"></div>
+      </div>
+      <button class="btn btn-a btn-full" id="w1-next" style="display:none" onclick="buildWtgColMap();wtgStep(2)">Next: Map Columns →</button>
+    </div>
+
+    <!-- STEP 2: MAP -->
+    <div class="panel" id="wp2">
+      <div class="card">
+        <div class="card-title">Daily Report — Column Mapping</div>
+        <div class="info">📌 Auto-guess pannirukken — confirm pannitu next pannu.</div>
+        <div class="g2" id="wtg-col-map"></div>
+      </div>
+      <div class="card" id="master-map-card">
+        <div class="card-title green">Master Data — Column Mapping</div>
+        <div class="info info-green">💡 WTG ID + Area (or Site) rendu um select pannu — same WTG number different area la correct kW kedaikkum.</div>
+        <div class="g2" id="master-col-map"></div>
+      </div>
+      <div class="card">
+        <div class="card-title blue">Report Settings</div>
+        <div class="g4">
+          <div><label class="lbl">Min Hours</label><input type="number" id="w-minhrs" value="6" min="1"/></div>
+          <div><label class="lbl">Report Date</label><input type="text" id="w-date"/></div>
+          <div><label class="lbl">Report Time</label><input type="text" id="w-time"/></div>
+          <div></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="wtgStep(1)">← Back</button>
+        <button class="btn btn-a" onclick="processWtgs()">Preview WTGs →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: PREVIEW -->
+    <div class="panel" id="wp3">
+      <div class="stats" id="w-stats"></div>
+      <div class="info info-blue" style="margin-bottom:14px;">
+        🔴 <strong>Contract violation WTGs</strong> — <em>Hide</em> button click pannina message la varaadhu.<br>
+        📝 <strong>Reason</strong> — Manual stop / No response / Material wait etc. update pannalam — message la show aagum.
+      </div>
+
+      <!-- FILTER BAR -->
+      <div class="card" style="margin-bottom:12px;padding:14px;">
+        <div class="card-title blue" style="margin-bottom:10px;">🔍 Filter Preview</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+          <div style="min-width:140px;">
+            <label class="lbl">Area</label>
+            <select id="pf-area" onchange="applyPreviewFilter()">
+              <option value="">All Areas</option>
+            </select>
+          </div>
+          <div style="min-width:120px;">
+            <label class="lbl">Min Hours</label>
+            <select id="pf-minhrs" onchange="applyPreviewFilter()">
+              <option value="0">All Durations</option>
+              <option value="6">≥ 6 hrs</option>
+              <option value="10">≥ 10 hrs</option>
+              <option value="12">≥ 12 hrs</option>
+              <option value="24">≥ 24 hrs</option>
+            </select>
+          </div>
+          <div style="min-width:120px;">
+            <label class="lbl">Show</label>
+            <select id="pf-show" onchange="applyPreviewFilter()">
+              <option value="all">All WTGs</option>
+              <option value="visible">In Report Only</option>
+              <option value="hidden">Hidden Only</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="resetPreviewFilter()">✕ Reset</button>
+          <div style="margin-left:auto;font-size:10px;color:var(--muted);align-self:center;" id="pf-count"></div>
+        </div>
+      </div>
+
+      <!-- MANUAL WTG ADD -->
+      <div class="card" style="margin-bottom:12px;padding:14px;" id="manual-add-card">
+        <div class="card-title green" style="margin-bottom:10px;">➕ Manual WTG Entry</div>
+        <div class="g4" style="margin-bottom:8px;">
+          <div><label class="lbl">WTG ID</label><input type="text" id="m-id" placeholder="e.g. S12345"/></div>
+          <div><label class="lbl">Area</label>
+            <select id="m-area"></select>
+          </div>
+          <div><label class="lbl">Customer</label><input type="text" id="m-cust" placeholder="Customer name"/></div>
+          <div><label class="lbl">kW</label><input type="number" id="m-kw" placeholder="2100"/></div>
+        </div>
+        <div class="g3" style="margin-bottom:8px;">
+          <div><label class="lbl">Error Details</label><input type="text" id="m-error" placeholder="Grid fault / Communication loss..."/></div>
+          <div><label class="lbl">Occurred (Date Time)</label><input type="text" id="m-occurred" placeholder="28-03-26 10:30"/></div>
+          <div><label class="lbl">Duration (hrs)</label><input type="number" id="m-dur" placeholder="11.5" step="0.5"/></div>
+        </div>
+        <div class="field"><label class="lbl">Reason / Note</label><input type="text" id="m-reason" placeholder="Manual stop / No response..."/></div>
+        <button class="btn btn-g btn-sm" onclick="addManualWtg()">+ Add to Preview</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Filtered WTGs
+          <span class="hidden-count" id="hidden-count"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr id="w-thead"></tr></thead>
+            <tbody id="w-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="wtgStep(2)">← Back</button>
+        <button class="btn btn-a" onclick="genWtgMsg();wtgStep(4)">Generate Report →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: OUTPUT -->
+    <div class="panel" id="wp4">
+      <div class="btn-row">
+        <button class="btn btn-a" id="w-copy-btn" onclick="copyText('w-out','w-copy-btn','📋 Copy for WhatsApp')">📋 Copy for WhatsApp</button>
+        <button class="btn btn-ghost" onclick="wtgStep(3)">← Edit</button>
+      </div>
+      <div class="out-box"><div class="out-lbl">WTG Stoppage Message</div><div class="out-text" id="w-out"></div></div>
+
+      <!-- ≥10hr Separate Section -->
+      <div style="margin-top:18px;">
+        <div class="card-title" style="margin-bottom:10px;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;color:var(--red);letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;">
+          <span style="width:3px;height:12px;background:var(--red);border-radius:2px;display:inline-block;"></span>
+          ≥ 10 Hour WTGs — Separate Report
+        </div>
+        <div id="ten-hr-empty" style="font-size:11px;color:var(--muted);margin-bottom:10px;display:none;">No WTGs with ≥10 hrs found.</div>
+        <div class="btn-row">
+          <button class="btn btn-red" id="w-copy-10hr" onclick="copyText('w-out-10hr','w-copy-10hr','📋 Copy ≥10 Hrs')">📋 Copy ≥10 Hrs Report</button>
+        </div>
+        <div class="out-box"><div class="out-lbl" style="color:var(--red);">≥ 10 Hour WTG Stoppage Message</div><div class="out-text" id="w-out-10hr"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FEEDER SECTION ═══════════════ -->
+<div id="section-feeder" style="display:none;">
+  <div class="content">
+
+    <div class="card">
+      <div class="card-title blue">Report Header</div>
+      <div class="g3">
+        <div><label class="lbl">Date</label><input type="text" id="f-date"/></div>
+        <div><label class="lbl">Time</label><input type="text" id="f-time"/></div>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- Feeder from Excel -->
+    <div class="card" id="feeder-excel-card">
+      <div class="card-title purple">Feeder from Excel Sheet</div>
+      <div class="info">📊 Daily Excel la feeder sheet irundha inga select pannu. BD category + Stopped WTGs auto-filter aagum.</div>
+      <div id="feeder-sheet-section">
+        <div class="info" style="color:var(--muted);border-color:var(--border);background:transparent;">
+          ⚠️ Step 1 la daily Excel upload pannina udane feeder sheets inga appear aagum.
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual BD -->
+    <div class="card">
+      <div class="card-title">Feeder BD — Manual Entry</div>
+      <div id="fbd-areas"></div>
+    </div>
+
+    <!-- Manual LC -->
+    <div class="card">
+      <div class="card-title blue">Feeder LC — Manual Entry</div>
+      <div id="flc-areas"></div>
+    </div>
+
+    <!-- Tie-up -->
+    <div class="card">
+      <div class="card-title green">Feeder Tie-up (Pre-filled Defaults)</div>
+      <div class="info info-green">ℹ️ Default entries pre-filled. Edit / Add / Remove pannalam.</div>
+      <div id="tieup-container"></div>
+      <button class="btn btn-o btn-sm" onclick="addTieup()" style="margin-top:6px;">+ Add Tie-up Entry</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-g btn-full" onclick="genFeederMsg()">Generate Feeder Report →</button>
+    </div>
+
+    <div id="feeder-out-wrap" style="display:none;">
+      <div class="btn-row">
+        <button class="btn btn-g" id="f-copy-btn" onclick="copyText('f-out','f-copy-btn','📋 Copy for WhatsApp')">📋 Copy for WhatsApp</button>
+      </div>
+      <div class="out-box"><div class="out-lbl">Feeder Status Message</div><div class="out-text" id="f-out"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════ CONSTANTS ══════════
+const AREAS = ["Bogampatti","Devarkulam","Muthayampatty","Radhapuram","Viliseri"];
+
+const DEFAULT_TIEUP = [
+  {area:"Muthayampatty",feederCount:3,desc:"Marudur 22kv SS Power transformer 5 - [Bakkiyalakshmi 22KV, Karvembu 22KV, SIL 22kV] - Feeders tie-up with Marudur 22kv SS Power transformer 4",date:"14-12-25",wtgCount:14},
+  {area:"Muthayampatty",feederCount:2,desc:"Ponnapuram 33kv SS Power transformer 6 - [Ponnapuram - Madathuppalayam 33KV, Suzlon 33KV 1] - Feeders tie-up with Sadayapalayam 33kv SS - Sadayapalayam - Rohit 33KV Feeder",date:"24-12-25",wtgCount:32},
+  {area:"Viliseri",feederCount:1,desc:"Chandragiri Feeder 1 tie-up with Feeder 4",date:"28-02-26",wtgCount:12},
+  {area:"Viliseri",feederCount:1,desc:"Chandragiri Feeder 2 tie-up with Feeder 3",date:"28-02-26",wtgCount:12},
+];
+
+// ══════════ STATE ══════════
+let dailyWB=null, masterWB=null;
+let allRows=[], masterRows=[];
+let dailyHeaders=[], masterHeaders=[];
+let filteredWTGs=[];    // [{row, hidden, reason}]
+let tieupEntries=[...DEFAULT_TIEUP.map(e=>({...e}))];
+let feederEntries={};
+AREAS.forEach(a=>{feederEntries[`fbd-${a}`]=[];feederEntries[`flc-${a}`]=[];});
+let feederEntryCount=0;
+
+// ══════════ UTILS ══════════
+function autoDate(){
+  const now=new Date(),M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${String(now.getDate()).padStart(2,"0")}-${M[now.getMonth()]}-${String(now.getFullYear()).slice(2)}`;
+}
+function autoTime(){
+  const n=new Date();return n.getHours().toString().padStart(2,"0")+":"+n.getMinutes().toString().padStart(2,"0");
+}
+function parseDur(v){
+  if(!v)return 0;v=v.toString().toLowerCase();
+  const m=v.match(/(\d+\.?\d*)\s*h/);if(m)return parseFloat(m[1]);
+  if(!isNaN(v))return parseFloat(v);return 0;
+}
+function fmtOccurred(val){
+  if(!val)return{date:"",time:""};
+  val=val.toString().trim();
+  const parts=val.split(/\s+/),M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let dp=parts[0]||"",tp=(parts[1]||"").slice(0,5);
+  const dm=dp.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if(dm){dp=`${dm[1]}-${M[parseInt(dm[2])-1]||dm[2]}-${dm[3].slice(2)}`;}
+  return{date:dp,time:tp};
+}
+function gv(row,colId){
+  // Manual rows have __prefixed keys
+  if(row.__manual){
+    const map={wc_id:"__wtgid",wc_area:"__area",wc_customer:"__customer",wc_error:"__error",wc_occurred:"__occurred",wc_duration:"__duration"};
+    const key=map[colId];if(key)return(row[key]||"").toString().trim();
+    return"";
+  }
+  const col=document.getElementById(colId)?.value;
+  return col?(row[col]||"").toString().trim():"";
+}
+function guess(headers,pats){
+  for(const p of pats){const h=headers.find(h=>h.toLowerCase().includes(p.toLowerCase()));if(h)return h;}
+  return "";
+}
+function colSel(id,headers,g,label,req=false,extra=""){
+  const opts=headers.map(h=>`<option value="${h}"${h===g?" selected":""}>${h}</option>`).join("");
+  return`<div${extra}><label class="lbl">${req?'<span style="color:var(--red)">*</span> ':''}${label}</label>
+    <select id="${id}"><option value="">-- Skip --</option>${opts}</select></div>`;
+}
+function copyText(outId,btnId,orig){
+  const text=document.getElementById(outId).textContent,btn=document.getElementById(btnId);
+  const ok=()=>{btn.textContent="✅ Copied!";setTimeout(()=>btn.textContent=orig,2200);};
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(ok);}
+  else{const ta=document.createElement("textarea");ta.value=text;ta.style.cssText="position:fixed;top:0;left:0;opacity:0;";document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand("copy");ok();}catch(e){alert("Copy manually pannu");}document.body.removeChild(ta);}
+}
+function updateHiddenCount(){
+  const h=filteredWTGs.filter(x=>x.hidden).length;
+  const el=document.getElementById("hidden-count");
+  el.textContent=h>0?`(${h} hidden — contract violation)` :"";
+}
+
+// ══════════ LOAD FILES ══════════
+function loadDailyExcel(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    dailyWB=XLSX.read(e.target.result,{type:"array",cellDates:true});
+    allRows=[];
+    dailyWB.SheetNames.forEach(sn=>{
+      const ws=dailyWB.Sheets[sn];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});
+      rows.forEach(row=>allRows.push({...row,__sheet:sn}));
+    });
+    dailyHeaders=allRows.length?Object.keys(allRows[0]).filter(k=>k!=="__sheet"):[];
+    document.getElementById("daily-title").textContent="✅ "+file.name;
+    document.getElementById("daily-zone").classList.add("upload-ok");
+    document.getElementById("daily-sheets").innerHTML=
+      `<span style="color:var(--green)">Sheets: </span>`+
+      dailyWB.SheetNames.map(s=>`<span style="color:var(--accent);margin-right:8px;">${s}</span>`).join("")+
+      `<span style="color:var(--muted)">— ${allRows.length} rows</span>`;
+    buildFeederSheetSelector();
+    checkW1();
+  };
+  r.readAsArrayBuffer(file);
+}
+function loadMasterExcel(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    masterWB=XLSX.read(e.target.result,{type:"array",cellDates:true});
+    const ws=masterWB.Sheets[masterWB.SheetNames[0]];
+    masterRows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});
+    masterHeaders=masterRows.length?Object.keys(masterRows[0]):[];
+    document.getElementById("master-title").textContent="✅ "+file.name;
+    document.getElementById("master-zone").classList.add("upload-ok");
+    document.getElementById("master-info").textContent=`${masterRows.length} WTG records · ${masterWB.SheetNames[0]}`;
+    checkW1();
+  };
+  r.readAsArrayBuffer(file);
+}
+function checkW1(){if(dailyWB)document.getElementById("w1-next").style.display="block";}
+
+// ══════════ FEEDER SHEET SELECTOR ══════════
+function buildFeederSheetSelector(){
+  if(!dailyWB)return;
+  const sec=document.getElementById("feeder-sheet-section");
+  const sheets=dailyWB.SheetNames;
+  sec.innerHTML=`
+    <div class="g2" style="margin-bottom:12px;">
+      <div><label class="lbl">Select Feeder Sheet</label>
+        <select id="feeder-sheet-sel">
+          <option value="">-- None / Manual only --</option>
+          ${sheets.map(s=>`<option value="${s}">${s}</option>`).join("")}
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn btn-o btn-sm" onclick="loadFeederSheet()">Load Sheet</button>
+      </div>
+    </div>
+    <div id="feeder-col-map" style="display:none;">
+      <div class="g2" id="feeder-col-map-inner" style="margin-bottom:10px;"></div>
+      <div class="info info-blue" style="font-size:10px;">BD category + Stopped status matum filter aagum. Restored skip pannuvom.</div>
+    </div>
+    <div id="feeder-sheet-preview" style="margin-top:10px;"></div>`;
+}
+
+function loadFeederSheet(){
+  const sn=document.getElementById("feeder-sheet-sel")?.value;
+  if(!sn||!dailyWB)return;
+  const ws=dailyWB.Sheets[sn];
+  const rows=XLSX.utils.sheet_to_json(ws,{defval:"",raw:false});
+  const hdrs=rows.length?Object.keys(rows[0]):[];
+
+  const mapDiv=document.getElementById("feeder-col-map");
+  mapDiv.style.display="block";
+  document.getElementById("feeder-col-map-inner").innerHTML=
+    colSel("fc_area",hdrs,guess(hdrs,["area","location","zone"]),"Area")+
+    colSel("fc_desc",hdrs,guess(hdrs,["feeder","description","name","feeder name"]),"Feeder Description")+
+    colSel("fc_cat",hdrs,guess(hdrs,["category","cat","type","bd","feeder type"]),"Category (BD/LC)")+
+    colSel("fc_status",hdrs,guess(hdrs,["status","state"]),"Status")+
+    colSel("fc_date",hdrs,guess(hdrs,["date","occurred","start"]),"Date")+
+    colSel("fc_wtgcount",hdrs,guess(hdrs,["wtg count","count","wtgs","no of wtg"]),"WTG Count");
+
+  // Preview
+  document.getElementById("feeder-sheet-preview").innerHTML=
+    `<div style="font-size:10px;color:var(--green);">✅ ${rows.length} rows loaded from "${sn}"</div>`;
+
+  window._feederSheetRows=rows;
+}
+
+// ══════════ COLUMN MAP ══════════
+function buildWtgColMap(){
+  const h=dailyHeaders;
+  document.getElementById("wtg-col-map").innerHTML=
+    colSel("wc_id",h,guess(h,["location no","wtg id","wtg","id","unit"]),"WTG ID",true)+
+    colSel("wc_area",h,guess(h,["area","location","zone"]),"Area",true)+
+    colSel("wc_customer",h,guess(h,["customer","owner","client"]),"Customer",true)+
+    colSel("wc_error",h,guess(h,["error details","error","fault","description"]),"Error Details",true)+
+    colSel("wc_occurred",h,guess(h,["error occurred","occurred","start time"]),"Error Occurred",true)+
+    colSel("wc_duration",h,guess(h,["current duration","duration","hrs"]),"Current Duration",true)+
+    colSel("wc_status",h,guess(h,["status","state"]),"Status (Stopped/Restored)")+
+    colSel("wc_category",h,guess(h,["category","cat","bd","lc","type"]),"Category (BD/LC)")+
+    colSel("wc_model",h,guess(h,["wtg model","model","type"]),"WTG Model")+
+    colSel("wc_site",h,guess(h,["site","location name","park"]),"Site");
+
+  if(masterRows.length){
+    const mh=masterHeaders;
+    document.getElementById("master-col-map").innerHTML=
+      colSel("mc_id",mh,guess(mh,["wtg id","id","location","unit"]),"WTG ID (lookup key)",true)+
+      colSel("mc_area",mh,guess(mh,["area","location","zone"]),"Area (for exact match)")+
+      colSel("mc_site",mh,guess(mh,["site","park"]),"Site (fallback match)")+
+      colSel("mc_kw",mh,guess(mh,["kw","capacity","power","rated"]),"Capacity (kW)",true)+
+      colSel("mc_contract",mh,guess(mh,["contract","violation","hide","exclude","flag"]),"Contract Violation Flag");
+    document.getElementById("master-map-card").style.display="block";
+  } else {
+    document.getElementById("master-map-card").innerHTML+='<div style="font-size:11px;color:var(--muted);">Master not uploaded — kW will be blank.</div>';
+  }
+
+  document.getElementById("w-date").value=autoDate();
+  document.getElementById("w-time").value=autoTime();
+}
+
+// ══════════ MASTER LOOKUP ══════════
+function buildKwMap(){
+  const map={};  // key: "wtgid|area" or "wtgid" → {kw, contract}
+  if(!masterRows.length)return map;
+  const idCol=document.getElementById("mc_id")?.value;
+  const areaCol=document.getElementById("mc_area")?.value;
+  const siteCol=document.getElementById("mc_site")?.value;
+  const kwCol=document.getElementById("mc_kw")?.value;
+  const contractCol=document.getElementById("mc_contract")?.value;
+  if(!idCol||!kwCol)return map;
+  masterRows.forEach(r=>{
+    const id=(r[idCol]||"").toString().trim().toLowerCase();
+    const area=(areaCol?r[areaCol]||"":"").toString().trim().toLowerCase();
+    const site=(siteCol?r[siteCol]||"":"").toString().trim().toLowerCase();
+    const kw=(r[kwCol]||"").toString().trim();
+    const contract=contractCol?(r[contractCol]||"").toString().trim().toLowerCase():"";
+    const isContract=["yes","true","1","violation","y"].includes(contract);
+    // Store with area key (most specific)
+    if(area)map[`${id}|${area}`]={kw,contract:isContract};
+    if(site)map[`${id}|${site}`]={kw,contract:isContract};
+    // Also store plain id as fallback
+    if(!map[id])map[id]={kw,contract:isContract};
+  });
+  return map;
+}
+
+// ══════════ PROCESS WTGS ══════════
+function processWtgs(){
+  const minHrs=parseFloat(document.getElementById("w-minhrs").value)||6;
+  const statusCol=document.getElementById("wc_status")?.value;
+  const catCol=document.getElementById("wc_category")?.value;
+  const kwMap=buildKwMap();
+
+  const rawFiltered=allRows.filter(row=>{
+    // Must be Stopped — skip Restored
+    if(statusCol){
+      const s=(row[statusCol]||"").toString().toLowerCase();
+      if(s==="restored"||s==="restore")return false;
+    }
+    // Duration >= minHrs
+    const dur=parseDur((row[document.getElementById("wc_duration")?.value||""]||"").toString());
+    return dur>=minHrs;
+  });
+
+  // Attach kW + contract flag
+  filteredWTGs=rawFiltered.map(row=>{
+    const id=gv(row,"wc_id").toLowerCase();
+    const area=gv(row,"wc_area").toLowerCase();
+    const site=gv(row,"wc_site").toLowerCase();
+    let meta=kwMap[`${id}|${area}`]||kwMap[`${id}|${site}`]||kwMap[id]||{kw:"",contract:false};
+    return{row, kw:meta.kw, contract:meta.contract, hidden:meta.contract, reason:""};
+  });
+
+  // Build table
+  const thead=document.getElementById("w-thead");
+  const tbody=document.getElementById("w-tbody");
+  thead.innerHTML=["","WTG ID","Area","Error Details","Duration","kW","Occurred","Customer","Reason / Note"].map(l=>`<th>${l}</th>`).join("");
+  renderWtgTable();
+  populateAreaFilter();
+
+  const areas=[...new Set(filteredWTGs.map(x=>gv(x.row,"wc_area")))];
+  document.getElementById("w-stats").innerHTML=`
+    <div class="stat"><div class="stat-val">${filteredWTGs.length}</div><div class="stat-label">Total WTGs</div></div>
+    <div class="stat"><div class="stat-val">${filteredWTGs.filter(x=>!x.hidden).length}</div><div class="stat-label">In Report</div></div>
+    <div class="stat"><div class="stat-val">${areas.length}</div><div class="stat-label">Locations</div></div>
+    <div class="stat"><div class="stat-val">${filteredWTGs.filter(x=>x.contract).length}</div><div class="stat-label">Contract Viol.</div></div>`;
+  updateHiddenCount();
+  wtgStep(3);
+}
+
+function renderWtgTable(){
+  const tbody=document.getElementById("w-tbody");
+  tbody.innerHTML=filteredWTGs.map((item,i)=>{
+    const r=item.row;
+    const id=gv(r,"wc_id");
+    const occ=fmtOccurred(gv(r,"wc_occurred"));
+    const contractBadge=item.contract?`<span class="contract-badge">Contract</span>`:"";
+    const hideBtn=item.hidden
+      ?`<button class="btn-xs btn-xs-green" onclick="toggleHide(${i})">↩ Show</button>`
+      :`<button class="btn-xs btn-xs-red" onclick="toggleHide(${i})">Hide</button>`;
+    return`<tr id="wtr-${i}" class="${item.hidden?"hidden-row":""}">
+      <td>${hideBtn}</td>
+      <td><span class="tag tag-a">${id}</span>${contractBadge}</td>
+      <td>${gv(r,"wc_area")}</td>
+      <td style="max-width:160px;word-break:break-word;">${gv(r,"wc_error")}</td>
+      <td><span class="tag tag-r">${gv(r,"wc_duration")}</span></td>
+      <td>${item.kw?`<span class="tag tag-g">${item.kw} kW</span>`:"—"}</td>
+      <td style="white-space:nowrap;">${occ.date}<br><span style="color:var(--muted)">${occ.time}</span></td>
+      <td style="max-width:130px;font-size:10px;">${gv(r,"wc_customer")}</td>
+      <td><input type="text" style="font-size:10px;padding:4px 8px;" placeholder="Manual stop / No response / Material wait..." value="${item.reason}" onchange="filteredWTGs[${i}].reason=this.value"/></td>
+    </tr>`;
+  }).join("");
+}
+
+function toggleHide(i){
+  filteredWTGs[i].hidden=!filteredWTGs[i].hidden;
+  const tr=document.getElementById(`wtr-${i}`);
+  tr.className=filteredWTGs[i].hidden?"hidden-row":"";
+  tr.querySelector("button").textContent=filteredWTGs[i].hidden?"↩ Show":"Hide";
+  tr.querySelector("button").className=filteredWTGs[i].hidden?"btn-xs btn-xs-green":"btn-xs btn-xs-red";
+  updateHiddenCount();
+  // Update stats
+  document.querySelectorAll(".stat-val")[1].textContent=filteredWTGs.filter(x=>!x.hidden).length;
+}
+
+// ══════════ GENERATE WTG MSG ══════════
+function genWtgMsg(){
+  const date=document.getElementById("w-date").value;
+  const time=document.getElementById("w-time").value;
+  const visible=filteredWTGs.filter(x=>!x.hidden);
+
+  const grouped={};
+  visible.forEach(item=>{
+    const area=gv(item.row,"wc_area")||item.row.__sheet||"Unknown";
+    if(!grouped[area])grouped[area]=[];
+    grouped[area].push(item);
+  });
+
+  let msg=`*TN Above 06 Hrs Stoppage WTGS Status:*\n\n`;
+  msg+=`*Date : ${date}*\n*Time : ${time}*\n*Total WTG's : ${visible.length}*\n`;
+
+  for(const[area,items]of Object.entries(grouped)){
+    msg+=`\n*${area} — ${items.length} WTG${items.length>1?"s":""}*\n`;
+    items.forEach((item,i)=>{
+      const r=item.row;
+      const id=gv(r,"wc_id");
+      const err=gv(r,"wc_error");
+      const kw=item.kw;
+      const cust=gv(r,"wc_customer");
+      const occ=fmtOccurred(gv(r,"wc_occurred"));
+      const reason=item.reason.trim();
+      const kwStr=kw?` _ ${kw} kW`:"";
+      const reasonStr=reason?` / ${reason}`:"";
+      msg+=`\n*${i+1}.* ${id} _ ${err}${reasonStr}${kwStr} _ ${occ.date} _ ${occ.time} _ *${cust}*\n`;
+    });
+  }
+  document.getElementById("w-out").textContent=msg;
+
+  // ── ≥10hr separate report ──
+  const ten=filteredWTGs.filter(x=>!x.hidden&&parseDur((x.row[document.getElementById("wc_duration")?.value||""]||x.row.__dur||"").toString())>=10);
+  const tenGrp={};
+  ten.forEach(item=>{
+    const area=gv(item.row,"wc_area")||item.row.__sheet||"Unknown";
+    if(!tenGrp[area])tenGrp[area]=[];
+    tenGrp[area].push(item);
+  });
+  const emptyEl=document.getElementById("ten-hr-empty");
+  if(ten.length===0){
+    document.getElementById("w-out-10hr").textContent="";
+    emptyEl.style.display="block";
+    document.getElementById("w-copy-10hr").style.display="none";
+  } else {
+    emptyEl.style.display="none";
+    document.getElementById("w-copy-10hr").style.display="inline-flex";
+    let msg10=`*TN Above 10 Hrs Stoppage WTGS Status:*\n\n`;
+    msg10+=`*Date : ${date}*\n*Time : ${time}*\n*Total WTG's : ${ten.length}*\n`;
+    for(const[area,items]of Object.entries(tenGrp)){
+      msg10+=`\n*${area} — ${items.length} WTG${items.length>1?"s":""}*\n`;
+      items.forEach((item,i)=>{
+        const r=item.row;
+        const id=gv(r,"wc_id");
+        const err=gv(r,"wc_error");
+        const kw=item.kw;
+        const cust=gv(r,"wc_customer");
+        const occ=fmtOccurred(gv(r,"wc_occurred"));
+        const reason=item.reason.trim();
+        const dur=(r[document.getElementById("wc_duration")?.value||""]||r.__dur||"").toString();
+        const kwStr=kw?` _ ${kw} kW`:"";
+        const reasonStr=reason?` / ${reason}`:"";
+        msg10+=`\n*${i+1}.* ${id} _ ${err}${reasonStr}${kwStr} _ ${occ.date} _ ${occ.time} _ *${cust}* _(${dur})_\n`;
+      });
+    }
+    document.getElementById("w-out-10hr").textContent=msg10;
+  }
+}
+
+// ══════════ FEEDER INIT ══════════
+function initFeeder(){
+  document.getElementById("f-date").value=autoDate();
+  document.getElementById("f-time").value=autoTime();
+  buildFeederAreas();
+  buildTieup();
+}
+function buildFeederAreas(){
+  ["fbd","flc"].forEach(type=>{
+    const el=document.getElementById(`${type}-areas`);
+    el.innerHTML=AREAS.map(area=>`
+      <div class="area-block">
+        <div class="area-hdr">
+          <span class="area-name">📍 ${area}</span>
+          <button class="btn btn-sm btn-o" onclick="addFeederEntry('${type}','${area}')">+ Add</button>
+        </div>
+        <div id="${type}-entries-${area}"><div style="color:var(--muted);font-size:11px;">NIL</div></div>
+      </div>`).join("");
+  });
+}
+
+function addFeederEntry(type,area){
+  const key=`${type}-${area}`,idx=++feederEntryCount;
+  feederEntries[key].push(idx);
+  renderFeederEntries(type,area);
+}
+function removeFeederEntry(type,area,idx){
+  const key=`${type}-${area}`;
+  feederEntries[key]=feederEntries[key].filter(i=>i!==idx);
+  renderFeederEntries(type,area);
+}
+function renderFeederEntries(type,area){
+  const key=`${type}-${area}`,entries=feederEntries[key];
+  const c=document.getElementById(`${type}-entries-${area}`);
+  if(!entries.length){c.innerHTML=`<div style="color:var(--muted);font-size:11px;">NIL</div>`;return;}
+  c.innerHTML=entries.map((idx,i)=>`
+    <div class="feeder-entry">
+      <div class="feeder-entry-hdr">
+        <span style="font-size:10px;color:var(--muted);">Entry ${i+1}</span>
+        <button class="btn-xs btn-xs-red" onclick="removeFeederEntry('${type}','${area}',${idx})">✕ Remove</button>
+      </div>
+      <div class="g2" style="margin-bottom:8px;">
+        <div><label class="lbl">Description</label><textarea id="fe-desc-${idx}" placeholder="Feeder name / details..."></textarea></div>
+        <div>
+          <div class="field"><label class="lbl">Date</label><input type="text" id="fe-date-${idx}" placeholder="28-03-26"/></div>
+          <div><label class="lbl">WTG Count</label><input type="number" id="fe-wtg-${idx}" placeholder="10" min="0"/></div>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+// ══════════ TIE-UP ══════════
+function buildTieup(){
+  const c=document.getElementById("tieup-container");c.innerHTML="";
+  tieupEntries.forEach((_,i)=>{const d=document.createElement("div");d.id=`tu-${i}`;c.appendChild(d);renderTieupEntry(i);});
+}
+function addTieup(){
+  tieupEntries.push({area:AREAS[0],feederCount:1,desc:"",date:"",wtgCount:0});
+  const c=document.getElementById("tieup-container"),d=document.createElement("div");
+  d.id=`tu-${tieupEntries.length-1}`;c.appendChild(d);renderTieupEntry(tieupEntries.length-1);
+}
+function removeTieup(i){tieupEntries.splice(i,1);buildTieup();}
+function renderTieupEntry(i){
+  const e=tieupEntries[i],el=document.getElementById(`tu-${i}`);
+  if(!el)return;
+  el.innerHTML=`
+    <div class="tieup-entry">
+      <div class="tieup-hdr">
+        <span style="font-size:10px;font-weight:700;color:var(--green);">Tie-up ${i+1}</span>
+        <button class="btn-xs btn-xs-red" onclick="removeTieup(${i})">✕</button>
+      </div>
+      <div class="g2" style="margin-bottom:8px;">
+        <div><label class="lbl">Area</label>
+          <select id="tu-area-${i}">${AREAS.map(a=>`<option${a===e.area?" selected":""}>${a}</option>`).join("")}</select></div>
+        <div class="g2">
+          <div><label class="lbl">Feeder Count</label><input type="number" id="tu-fc-${i}" value="${e.feederCount}" min="1"/></div>
+          <div><label class="lbl">WTG Count</label><input type="number" id="tu-wc-${i}" value="${e.wtgCount}" min="0"/></div>
+        </div>
+      </div>
+      <div class="field"><label class="lbl">Description</label><textarea id="tu-desc-${i}">${e.desc}</textarea></div>
+      <div><label class="lbl">Date</label><input type="text" id="tu-date-${i}" value="${e.date}" placeholder="28-02-26"/></div>
+    </div>`;
+}
+
+// ══════════ GENERATE FEEDER MSG ══════════
+function genFeederMsg(){
+  // Sync tieup from DOM
+  tieupEntries.forEach((e,i)=>{
+    e.area=document.getElementById(`tu-area-${i}`)?.value||e.area;
+    e.feederCount=+document.getElementById(`tu-fc-${i}`)?.value||e.feederCount;
+    e.wtgCount=+document.getElementById(`tu-wc-${i}`)?.value||e.wtgCount;
+    e.desc=document.getElementById(`tu-desc-${i}`)?.value||e.desc;
+    e.date=document.getElementById(`tu-date-${i}`)?.value||e.date;
+  });
+
+  const date=document.getElementById("f-date").value;
+  const time=document.getElementById("f-time").value;
+
+  function getManualEntries(type,area){
+    const key=`${type}-${area}`;
+    return feederEntries[key].map(idx=>({
+      desc:(document.getElementById(`fe-desc-${idx}`)?.value||"").trim(),
+      date:(document.getElementById(`fe-date-${idx}`)?.value||"").trim(),
+      wtg:+(document.getElementById(`fe-wtg-${idx}`)?.value||0),
+    })).filter(e=>e.desc);
+  }
+
+  // Get feeder from Excel sheet (BD only, not restored)
+  const excelFeederByArea={};
+  AREAS.forEach(a=>excelFeederByArea[a]=[]);
+  if(window._feederSheetRows){
+    const areaCol=document.getElementById("fc_area")?.value;
+    const descCol=document.getElementById("fc_desc")?.value;
+    const catCol=document.getElementById("fc_cat")?.value;
+    const statusCol=document.getElementById("fc_status")?.value;
+    const dateCol=document.getElementById("fc_date")?.value;
+    const wtgCol=document.getElementById("fc_wtgcount")?.value;
+
+    window._feederSheetRows.forEach(row=>{
+      // BD only
+      if(catCol){const cat=(row[catCol]||"").toString().toLowerCase();if(!cat.includes("bd"))return;}
+      // Not restored
+      if(statusCol){const s=(row[statusCol]||"").toString().toLowerCase();if(s==="restored"||s==="restore")return;}
+      const area=(areaCol?row[areaCol]||"":"").toString().trim();
+      const matched=AREAS.find(a=>area.toLowerCase().includes(a.toLowerCase()));
+      if(matched){
+        excelFeederByArea[matched].push({
+          desc:(descCol?row[descCol]||"":"").toString().trim(),
+          date:(dateCol?row[dateCol]||"":"").toString().trim(),
+          wtg:+(wtgCol?row[wtgCol]||0:0),
+        });
+      }
+    });
+  }
+
+  // Combine manual + excel
+  function getAllBD(area){return[...getManualEntries("fbd",area),...excelFeederByArea[area]];}
+  function getAllLC(area){return getManualEntries("flc",area);}
+
+  let bdTotal=0,bdWtgs=0,lcTotal=0,lcWtgs=0;
+  AREAS.forEach(a=>{
+    const bd=getAllBD(a),lc=getAllLC(a);
+    bdTotal+=bd.length;bdWtgs+=bd.reduce((s,e)=>s+e.wtg,0);
+    lcTotal+=lc.length;lcWtgs+=lc.reduce((s,e)=>s+e.wtg,0);
+  });
+
+  const tuTotal=tieupEntries.reduce((s,e)=>s+e.feederCount,0);
+  const tuWtgs=tieupEntries.reduce((s,e)=>s+e.wtgCount,0);
+
+  let msg=`*TN Above 06 Hrs Stoppage Feeder Status*\n\n`;
+  msg+=`*Date : ${date}*\n*Time : ${time}*\n\n`;
+  msg+=`*Feeder BD : ${String(bdTotal).padStart(2,"0")} [ ${String(bdWtgs).padStart(2,"0")} WTGs]*\n`;
+  msg+=`*Feeder LC :${String(lcTotal).padStart(2,"0")} [ ${String(lcWtgs).padStart(2,"0")} WTGs ]*\n`;
+
+  AREAS.forEach(a=>{
+    const bd=getAllBD(a);
+    if(bd.length){msg+=`\n*${a} - ${bd.length}*\n`;bd.forEach((e,i)=>{msg+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;});}
+    else{msg+=`\n*${a} - NIL*\n`;}
+  });
+  msg+=`\n`;
+
+  const anyLC=AREAS.some(a=>getAllLC(a).length>0);
+  if(anyLC){
+    AREAS.forEach(a=>{const lc=getAllLC(a);if(lc.length){msg+=`\n*${a} LC - ${lc.length}*\n`;lc.forEach((e,i)=>{msg+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;});}});
+    msg+=`\n`;
+  }
+
+  msg+=`*Feeder tie-up :${String(tuTotal).padStart(2,"0")} [${tuWtgs} WTGs]*\n`;
+  const tuByArea={};
+  tieupEntries.forEach(e=>{if(!tuByArea[e.area])tuByArea[e.area]=[];tuByArea[e.area].push(e);});
+  for(const[area,entries]of Object.entries(tuByArea)){
+    const afc=entries.reduce((s,e)=>s+e.feederCount,0);
+    msg+=`\n*${area} - ${String(afc).padStart(2,"0")}*\n`;
+    entries.forEach((e,i)=>{msg+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;});
+  }
+
+  document.getElementById("f-out").textContent=msg;
+  document.getElementById("feeder-out-wrap").style.display="block";
+  document.getElementById("feeder-out-wrap").scrollIntoView({behavior:"smooth"});
+}
+
+// ══════════ NAV ══════════
+function mainTab(t){
+  document.getElementById("section-wtg").style.display=t==="wtg"?"block":"none";
+  document.getElementById("section-feeder").style.display=t==="feeder"?"block":"none";
+  document.getElementById("mtab-wtg").classList.toggle("active",t==="wtg");
+  document.getElementById("mtab-feeder").classList.toggle("active",t==="feeder");
+}
+function wtgStep(n){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById(`wp${i}`).classList.toggle("active",i===n);
+    document.getElementById(`wt${i}`).classList.toggle("active",i===n);
+  });
+}
+
+// ══════════ PREVIEW FILTER ══════════
+function populateAreaFilter(){
+  const sel=document.getElementById("pf-area");
+  if(!sel)return;
+  const areas=[...new Set(filteredWTGs.map(x=>gv(x.row,"wc_area")||x.row.__sheet||"Unknown"))].sort();
+  sel.innerHTML=`<option value="">All Areas</option>`+areas.map(a=>`<option value="${a}">${a}</option>`).join("");
+  // Also populate manual area dropdown
+  const msel=document.getElementById("m-area");
+  if(msel)msel.innerHTML=AREAS.map(a=>`<option value="${a}">${a}</option>`).join("");
+}
+function applyPreviewFilter(){
+  const area=document.getElementById("pf-area")?.value||"";
+  const minHrs=parseFloat(document.getElementById("pf-minhrs")?.value)||0;
+  const show=document.getElementById("pf-show")?.value||"all";
+  const durColId="wc_duration";
+  let shown=0;
+  filteredWTGs.forEach((item,i)=>{
+    const tr=document.getElementById(`wtr-${i}`);if(!tr)return;
+    const rowArea=gv(item.row,"wc_area")||item.row.__sheet||"Unknown";
+    const dur=parseDur((item.row[document.getElementById(durColId)?.value||""]||item.row.__dur||"").toString());
+    const areaOk=!area||rowArea===area;
+    const durOk=dur>=minHrs;
+    const showOk=show==="all"||(show==="visible"&&!item.hidden)||(show==="hidden"&&item.hidden);
+    const visible=areaOk&&durOk&&showOk;
+    tr.style.display=visible?"":"none";
+    if(visible)shown++;
+  });
+  const pfc=document.getElementById("pf-count");
+  if(pfc)pfc.textContent=`Showing ${shown} of ${filteredWTGs.length}`;
+}
+function resetPreviewFilter(){
+  ["pf-area","pf-minhrs","pf-show"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==="pf-minhrs"?"0":id==="pf-show"?"all":"";});
+  filteredWTGs.forEach((_,i)=>{const tr=document.getElementById(`wtr-${i}`);if(tr)tr.style.display="";});
+  const pfc=document.getElementById("pf-count");if(pfc)pfc.textContent="";
+}
+
+// ══════════ MANUAL WTG ENTRY ══════════
+let manualWtgCount=0;
+function addManualWtg(){
+  const id=(document.getElementById("m-id")?.value||"").trim();
+  const area=(document.getElementById("m-area")?.value||"").trim();
+  const cust=(document.getElementById("m-cust")?.value||"").trim();
+  const kw=(document.getElementById("m-kw")?.value||"").trim();
+  const err=(document.getElementById("m-error")?.value||"").trim();
+  const occurred=(document.getElementById("m-occurred")?.value||"").trim();
+  const dur=(document.getElementById("m-dur")?.value||"0").trim();
+  const reason=(document.getElementById("m-reason")?.value||"").trim();
+  if(!id||!err){alert("WTG ID and Error Details are required!");return;}
+  manualWtgCount++;
+  const fakeRow={
+    __manual:true,
+    __dur:dur,
+    __sheet:area,
+    _id:id,_area:area,_cust:cust,_error:err,_occurred:occurred,_duration:dur
+  };
+  // Patch gv to support manual rows — store in row directly with known keys
+  fakeRow["__wtgid"]=id;fakeRow["__area"]=area;fakeRow["__customer"]=cust;
+  fakeRow["__error"]=err;fakeRow["__occurred"]=occurred;fakeRow["__duration"]=dur;
+  const item={row:fakeRow,kw,contract:false,hidden:false,reason};
+  filteredWTGs.push(item);
+  renderWtgTable();
+  populateAreaFilter();
+  // Update stats
+  const stats=document.querySelectorAll(".stat-val");
+  if(stats[0])stats[0].textContent=filteredWTGs.length;
+  if(stats[1])stats[1].textContent=filteredWTGs.filter(x=>!x.hidden).length;
+  updateHiddenCount();
+  // Clear form
+  ["m-id","m-cust","m-kw","m-error","m-occurred","m-dur","m-reason"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+}
+
+// ══════════ LIVE CLOCK ══════════
+function updateLiveClock(){
+  const now=new Date();
+  const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const D=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const dateStr=`${D[now.getDay()]}, ${String(now.getDate()).padStart(2,"0")} ${M[now.getMonth()]} ${now.getFullYear()}`;
+  const timeStr=now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")+":"+now.getSeconds().toString().padStart(2,"0");
+  const ld=document.getElementById("live-date");if(ld)ld.textContent=dateStr;
+  const lt=document.getElementById("live-time");if(lt)lt.textContent=timeStr;
+}
+updateLiveClock();
+setInterval(updateLiveClock,1000);
+
+// ══════════ INIT ══════════
+initFeeder();
+</script>
+</body>
+</html>
