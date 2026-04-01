@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Suzlon SMS Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06080d; --s1:#0b0e15; --s2:#0f1320; --s3:#141929;
+  --b1:#1a2235; --b2:#212d42; --b3:#2a3850;
+  --amber:#f0a500; --amber2:#c48500; --amberD:rgba(240,165,0,.08);
+  --green:#27ae60; --greenD:rgba(39,174,96,.08);
+  --red:#c0392b; --redD:rgba(192,57,43,.1);
+  --blue:#2980b9; --blueD:rgba(41,128,185,.08);
+  --cyan:#16a085; --purple:#8e44ad;
+  --text:#c8d4e0; --t2:#6a7f98; --t3:#2e3d52;
+  --newbg:#0a1f0a; --newborder:#1e5c1e;
+}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:12px;}
+::-webkit-scrollbar{width:4px;height:4px} ::-webkit-scrollbar-track{background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+/* HEADER */
+header{background:var(--s1);border-bottom:2px solid var(--b1);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{font-family:'Bebas Neue',sans-serif;font-size:22px;background:var(--amber);color:#000;padding:1px 9px;border-radius:2px;letter-spacing:.1em}
+.logo-info{line-height:1.4}
+.logo-title{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--amber);letter-spacing:.12em}
+.logo-sub{font-size:8px;color:var(--t2);letter-spacing:.2em;text-transform:uppercase}
+.hdr-right{display:flex;align-items:center;gap:16px}
+#hdr-date{font-size:10px;color:var(--amber);font-weight:600;text-align:right}
+#hdr-time{font-size:9px;color:var(--t2);text-align:right;margin-top:1px}
+.cycle-timer{font-size:9px;padding:3px 10px;border-radius:12px;border:1px solid var(--b2);color:var(--t2);cursor:default;letter-spacing:.04em}
+.cycle-timer.warn{border-color:var(--amber);color:var(--amber);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* NAV TABS */
+.nav{display:flex;background:var(--s1);border-bottom:1px solid var(--b1);padding:0 20px;overflow-x:auto;gap:2px}
+.ntab{background:none;border:none;border-bottom:2px solid transparent;color:var(--t2);cursor:pointer;font-family:inherit;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;white-space:nowrap;transition:all .15s}
+.ntab.active{border-bottom-color:var(--amber);color:var(--amber)}
+.ntab:hover:not(.active){color:var(--text)}
+.ntab .nbadge{display:inline-block;background:var(--b1);border-radius:8px;padding:1px 5px;font-size:8px;margin-left:4px}
+.ntab.active .nbadge{background:var(--amber);color:#000}
+
+/* LAYOUT */
+main{max-width:1200px;margin:0 auto;padding:16px}
+.panel{display:none}.panel.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:700px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:6px;padding:14px;margin-bottom:12px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ct{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.12em;display:flex;align-items:center;gap:7px}
+.ct::before{content:'';width:2px;height:12px;border-radius:1px;background:currentColor;opacity:.6}
+.ct.amber{color:var(--amber)} .ct.green{color:var(--green)} .ct.blue{color:var(--blue)}
+.ct.red{color:var(--red)} .ct.cyan{color:var(--cyan)} .ct.purple{color:var(--purple)}
+
+/* FORM */
+label.lb{display:block;font-size:8px;color:var(--t2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+input[type=text],input[type=number],select,textarea{
+  width:100%;background:var(--bg);border:1px solid var(--b1);border-radius:4px;
+  color:var(--text);font-family:inherit;font-size:11px;padding:6px 9px;outline:none;transition:border-color .1s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--amber)}
+select option{background:var(--s2)} input::placeholder,textarea::placeholder{color:var(--t3)}
+textarea{resize:vertical;min-height:44px} .field{margin-bottom:8px}
+
+/* UPLOAD */
+.upzone{border:2px dashed var(--b2);border-radius:6px;padding:18px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.upzone:hover,.upzone.over{border-color:var(--amber);background:var(--amberD)}
+.upzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upzone.done{border-color:var(--green);background:var(--greenD)}
+.up-icon{font-size:20px;margin-bottom:5px}
+.up-title{font-size:11px;font-weight:600;color:var(--text)}
+.up-sub{font-size:9px;color:var(--t2);margin-top:2px;letter-spacing:.04em}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;padding:7px 14px;transition:all .1s;letter-spacing:.03em;white-space:nowrap}
+.btn-a{background:var(--amber);color:#000}.btn-a:hover{background:var(--amber2)}
+.btn-g{background:var(--green);color:#fff}.btn-g:hover{filter:brightness(1.1)}
+.btn-o{background:transparent;border:1px solid var(--amber);color:var(--amber)}.btn-o:hover{background:var(--amberD)}
+.btn-b{background:transparent;border:1px solid var(--blue);color:var(--blue)}.btn-b:hover{background:var(--blueD)}
+.btn-r{background:transparent;border:1px solid var(--red);color:var(--red)}.btn-r:hover{background:var(--redD)}
+.btn-gh{background:transparent;border:1px solid var(--b2);color:var(--t2)}.btn-gh:hover{border-color:var(--text);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:9px} .btn-xs{padding:2px 6px;font-size:8px;border:1px solid;border-radius:3px;cursor:pointer;font-family:inherit}
+.xs-r{color:var(--red);border-color:var(--red);background:transparent}
+.xs-g{color:var(--green);border-color:var(--green);background:transparent}
+.xs-a{color:var(--amber);border-color:var(--amber);background:transparent}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.btn-full{width:100%;justify-content:center}
+
+/* STATS BAR */
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:var(--s2);border:1px solid var(--b1);border-radius:5px;padding:8px 12px;flex:1;min-width:64px}
+.sv{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;color:var(--amber)}
+.sv.g{color:var(--green)}.sv.r{color:var(--red)}.sv.c{color:var(--cyan)}.sv.p{color:var(--purple)}
+.sl{font-size:7px;color:var(--t2);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+
+/* TABLE */
+.twrap{overflow-x:auto} table{width:100%;border-collapse:collapse;font-size:10px}
+thead{position:sticky;top:0;z-index:10}
+th{background:var(--s3);color:var(--amber);font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:6px 8px;text-align:left;border-bottom:1px solid var(--b1);white-space:nowrap;font-weight:700}
+td{padding:5px 7px;border-bottom:1px solid var(--b1);vertical-align:middle}
+tr.rh td{opacity:.3;text-decoration:line-through}
+tr.rn{background:var(--newbg)} tr.rn td{border-color:var(--newborder)}
+tr:hover:not(.rh) td{background:rgba(255,255,255,.012)}
+.tag{display:inline-block;font-size:8px;border-radius:3px;padding:1px 5px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.ta{background:rgba(240,165,0,.15);color:var(--amber)}
+.tr{background:rgba(192,57,43,.15);color:#e74c3c}
+.tg{background:rgba(39,174,96,.15);color:var(--green)}
+.tb{background:rgba(41,128,185,.15);color:var(--blue)}
+.tnew{background:var(--newbg);color:#4caf50;border:1px solid var(--newborder)}
+
+/* INLINE INPUTS */
+.etr-inp{
+  width:86px;background:var(--bg);border:1px solid var(--b2);border-radius:3px;
+  color:var(--cyan);font-family:inherit;font-size:9px;padding:3px 5px;text-align:center;outline:none;
+}
+.etr-inp:focus{border-color:var(--cyan)}
+.etr-inp.has{border-color:var(--cyan);background:rgba(22,160,133,.1)}
+.rsn-inp{
+  min-width:110px;background:var(--bg);border:1px solid var(--b1);border-radius:3px;
+  color:var(--text);font-family:inherit;font-size:9px;padding:3px 5px;outline:none;
+}
+.rsn-inp:focus{border-color:var(--amber)}
+
+/* OUTPUT */
+.outbox{background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:14px;position:relative}
+.outlbl{font-size:7px;color:var(--t2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.outtxt{white-space:pre-wrap;font-size:10px;line-height:1.9;color:var(--text);font-family:'IBM Plex Mono',monospace}
+.copy-ok{animation:cf .25s ease}
+@keyframes cf{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
+
+/* INFO */
+.info{border-radius:4px;padding:8px 12px;font-size:9px;margin-bottom:10px;line-height:1.6;border-left:2px solid}
+.ia{background:var(--amberD);border-color:var(--amber);color:#c49a3c}
+.ig{background:var(--greenD);border-color:var(--green);color:#27ae60}
+.ib{background:var(--blueD);border-color:var(--blue);color:#2980b9}
+.ir{background:var(--redD);border-color:var(--red);color:#c0392b}
+
+/* AREA BLOCK */
+.ablock{background:var(--s2);border:1px solid var(--b1);border-radius:5px;padding:10px;margin-bottom:8px}
+.ahead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.aname{font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.04em}
+
+/* FEEDER ENTRIES */
+.fent{background:var(--s1);border:1px solid var(--b1);border-radius:4px;padding:8px;margin-bottom:5px}
+.fhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.tuent{background:var(--bg);border:1px solid var(--b1);border-radius:4px;padding:8px;margin-bottom:5px}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:rgba(6,8,13,.85);display:none;align-items:center;justify-content:center;z-index:999;backdrop-filter:blur(3px)}
+#loading.on{display:flex}
+.lbox{background:var(--s1);border:1px solid var(--amber);border-radius:8px;padding:20px 28px;text-align:center}
+.spin{width:28px;height:28px;border:2px solid var(--b2);border-top-color:var(--amber);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ltxt{font-size:10px;color:var(--t2);letter-spacing:.05em}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s1);border:1px solid var(--amber);border-radius:5px;padding:8px 16px;font-size:10px;color:var(--amber);z-index:9999;animation:toastIn .2s ease}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* MANUAL ADD FORM */
+.manual-form{background:var(--newbg);border:1px solid var(--newborder);border-radius:5px;padding:12px;margin-bottom:10px}
+
+/* SECTION DIVIDER */
+.divider{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:.15em;color:var(--t3);padding:8px 0 4px;border-bottom:1px solid var(--b1);margin-bottom:8px;text-transform:uppercase}
+
+/* STATUS DOTS */
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot-g{background:var(--green)}.dot-r{background:var(--red)}.dot-a{background:var(--amber)}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="lbox"><div class="spin"></div><div class="ltxt" id="ltxt">Processing...</div></div></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">SUZLON</div>
+    <div class="logo-info">
+      <div class="logo-title">SMS REPORT PORTAL</div>
+      <div class="logo-sub">WTG Stoppage · Feeder · CEO · State Head</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span id="cycle-timer" class="cycle-timer" title="Next refresh due">—</span>
+    <div>
+      <div id="hdr-date">—</div>
+      <div id="hdr-time">—</div>
+    </div>
+  </div>
+</header>
+
+<div class="nav">
+  <button class="ntab active" onclick="goTab('upload')" id="nt-upload">⬆ Upload Data</button>
+  <button class="ntab" onclick="goTab('preview')" id="nt-preview">🔍 Preview <span class="nbadge" id="nb-preview">0</span></button>
+  <button class="ntab" onclick="goTab('ceo')" id="nt-ceo">👔 CEO ≥10hr</button>
+  <button class="ntab" onclick="goTab('sh')" id="nt-sh">📋 SH Major</button>
+  <button class="ntab" onclick="goTab('minor')" id="nt-minor">📄 SH Minor</button>
+  <button class="ntab" onclick="goTab('feeder')" id="nt-feeder">🔌 Feeder</button>
+</div>
+
+<main>
+
+<!-- ═══════ UPLOAD ═══════ -->
+<div class="panel active" id="tab-upload">
+
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-head"><div class="ct amber">BD Sheet Excel (Area MSR)</div></div>
+      <div class="info ia">📁 VLSR_MSR + MNP_MSR — Multiple files drop karo. BD Sheet auto-detect aagum. FDR sheet la irunthu feeder data auto-read aagum.</div>
+      <div class="upzone" id="bd-zone"
+           ondragover="event.preventDefault();this.classList.add('over')"
+           ondragleave="this.classList.remove('over')"
+           ondrop="event.preventDefault();this.classList.remove('over');uploadBD(event.dataTransfer.files)">
+        <input type="file" accept=".xlsx,.xls" multiple onchange="uploadBD(this.files)"/>
+        <div class="up-icon">📊</div>
+        <div class="up-title" id="bd-title">Drop VLSR_MSR + MNP_MSR Excel files</div>
+        <div class="up-sub">Multiple files supported • BD Sheet auto-detect</div>
+      </div>
+      <div id="bd-status" style="margin-top:8px;font-size:9px;color:var(--t2)"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="ct green">Master Data (Permanent)</div></div>
+      <div class="info ig">🔒 Once upload panna save aagum — app close panna um irukum. Capacity lookup ku use panrom. Re-upload panna matum update aagum.</div>
+      <div class="upzone" id="master-zone"
+           ondragover="event.preventDefault();this.classList.add('over')"
+           ondragleave="this.classList.remove('over')"
+           ondrop="event.preventDefault();this.classList.remove('over');uploadMaster(event.dataTransfer.files[0])">
+        <input type="file" accept=".xlsx,.xls" onchange="uploadMaster(this.files[0])"/>
+        <div class="up-icon">🗃️</div>
+        <div class="up-title" id="master-title">Master_Data.xlsx</div>
+        <div class="up-sub" id="master-sub">Upload once — stays saved permanently</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats" id="main-stats">
+    <div class="stat"><div class="sv" id="st-total">—</div><div class="sl">Total WTGs</div></div>
+    <div class="stat"><div class="sv g" id="st-active">—</div><div class="sl">In Reports</div></div>
+    <div class="stat"><div class="sv r" id="st-10hr">—</div><div class="sl">≥10 Hr</div></div>
+    <div class="stat"><div class="sv c" id="st-new">—</div><div class="sl">New This Load</div></div>
+    <div class="stat"><div class="sv" id="st-areas">—</div><div class="sl">Areas</div></div>
+    <div class="stat"><div class="sv p" id="st-feeder">—</div><div class="sl">Feeder BD</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="ct amber">Data Management</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-o btn-sm" onclick="clearBDOnly()">🗑 Clear BD</button>
+        <button class="btn btn-gh btn-sm" onclick="clearAll()">⚠ Reset All</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:9px;color:var(--t2)">
+      <span><span class="dot dot-g"></span>All data saved in browser (IndexedDB)</span>
+      <span><span class="dot dot-a"></span>ETR dates & reasons persist forever</span>
+      <span><span class="dot dot-r"></span>Only manual delete removes data</span>
+    </div>
+    <div id="db-info" style="margin-top:10px;font-size:9px;color:var(--t3)">Loading saved data...</div>
+  </div>
+
+</div>
+
+<!-- ═══════ PREVIEW ═══════ -->
+<div class="panel" id="tab-preview">
+  <div class="grid2" style="margin-bottom:10px">
+    <div class="card" style="padding:10px">
+      <div class="grid3">
+        <div>
+          <label class="lb">Min Hours</label>
+          <select id="pv-min" onchange="renderTable()">
+            <option value="6">≥ 6 Hrs</option>
+            <option value="10">≥ 10 Hrs</option>
+            <option value="12">≥ 12 Hrs</option>
+            <option value="24">≥ 24 Hrs</option>
+          </select>
+        </div>
+        <div>
+          <label class="lb">Area</label>
+          <select id="pv-area" onchange="renderTable()">
+            <option value="">All Areas</option>
+          </select>
+        </div>
+        <div>
+          <label class="lb">Show</label>
+          <select id="pv-show" onchange="renderTable()">
+            <option value="all">All WTGs</option>
+            <option value="visible">In Report Only</option>
+            <option value="hidden">Hidden Only</option>
+            <option value="new">New Only</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:10px">
+      <div class="divider" style="margin-top:0">Add Manual WTG</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input type="text" id="m-id" placeholder="WTG ID" style="width:80px"/>
+        <select id="m-area" style="width:110px"></select>
+        <input type="text" id="m-site" placeholder="Site" style="width:90px"/>
+        <input type="text" id="m-error" placeholder="Error Details" style="flex:1;min-width:120px"/>
+        <input type="number" id="m-dur" placeholder="Hrs" style="width:55px" step="0.5"/>
+        <button class="btn btn-g btn-sm" onclick="addManualWTG()">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="ct amber">WTG Preview Table</div>
+      <div style="font-size:8px;color:var(--t2);display:flex;gap:10px">
+        <span style="color:var(--cyan)">ETR = CEO report</span>
+        <span>Reason = SH report</span>
+        <span style="color:var(--amber)">Major = SH Major tab</span>
+      </div>
+    </div>
+    <div class="twrap">
+      <table>
+        <thead><tr>
+          <th>Action</th><th>WTG ID</th><th>Area</th><th>Site</th>
+          <th>Error Details</th><th>Duration</th><th>Occurred</th>
+          <th>ETR <span style="color:var(--cyan);font-weight:400">(CEO)</span></th>
+          <th>Reason <span style="color:var(--t2);font-weight:400">(SH)</span></th>
+          <th title="Include in SH Major Report">Major</th>
+        </tr></thead>
+        <tbody id="wtg-tbody"></tbody>
+      </table>
+    </div>
+    <div id="pv-empty" style="text-align:center;padding:28px;color:var(--t3);font-size:10px">
+      Upload Excel files to see WTG data
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ CEO REPORT ═══════ -->
+<div class="panel" id="tab-ceo">
+  <div class="info ia">👔 <strong>CEO Format</strong> — ≥10hr WTGs with ETR dates. ETR date Preview tab la set pannunga. Feeder tieup auto-pull aagum.</div>
+  <div class="grid2" style="margin-bottom:10px">
+    <div class="card" style="padding:10px">
+      <div class="divider" style="margin-top:0">Add Manual WTG to CEO</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input type="text" id="cm-id" placeholder="WTG ID" style="width:80px"/>
+        <select id="cm-area" style="width:100px"></select>
+        <input type="text" id="cm-site" placeholder="Site" style="width:90px"/>
+        <input type="text" id="cm-error" placeholder="Error Details" style="flex:1;min-width:100px"/>
+        <input type="number" id="cm-dur" placeholder="Hrs" style="width:55px"/>
+        <input type="text" id="cm-etr" placeholder="ETR DD/MM/YY" style="width:90px"/>
+        <button class="btn btn-o btn-sm" onclick="addManualWTG('ceo')">+ Add</button>
+      </div>
+    </div>
+    <div class="card" style="padding:10px;display:flex;align-items:center;gap:10px">
+      <button class="btn btn-a btn-full" onclick="genCEO()">⚡ Generate CEO Report</button>
+    </div>
+  </div>
+  <div id="ceo-wrap">
+    <div class="btn-row"><button class="btn btn-g" id="ceo-copy" onclick="copyOut('ceo-out','ceo-copy','📋 Copy CEO Report')">📋 Copy CEO Report</button></div>
+    <div class="outbox"><div class="outlbl">CEO REPORT — ≥10 HRS WTG STOPPAGE</div><div class="outtxt" id="ceo-out"></div></div>
+  </div>
+</div>
+
+<!-- ═══════ SH MAJOR ═══════ -->
+<div class="panel" id="tab-sh">
+  <div class="info ia">📋 <strong>State Head — Major BD</strong> — Only WTGs with Major checkbox ticked. Area grouped format.</div>
+  <div class="grid2" style="margin-bottom:10px">
+    <div class="card" style="padding:10px">
+      <div class="grid2">
+        <div>
+          <label class="lb">Min Hours</label>
+          <select id="sh-min">
+            <option value="6">≥ 6 Hrs</option>
+            <option value="10">≥ 10 Hrs</option>
+          </select>
+        </div>
+        <div>
+          <label class="lb">Area Filter</label>
+          <select id="sh-area"><option value="">All Areas</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:10px;display:flex;align-items:center;gap:10px">
+      <button class="btn btn-a btn-full" onclick="genSH('major')">📋 Generate SH Major Report</button>
+    </div>
+  </div>
+  <div id="sh-wrap">
+    <div class="btn-row"><button class="btn btn-g" id="sh-copy" onclick="copyOut('sh-out','sh-copy','📋 Copy SH Major')">📋 Copy SH Major</button></div>
+    <div class="outbox"><div class="outlbl">SH REPORT — MAJOR BD (STATE HEAD)</div><div class="outtxt" id="sh-out"></div></div>
+  </div>
+</div>
+
+<!-- ═══════ SH MINOR ═══════ -->
+<div class="panel" id="tab-minor">
+  <div class="info ib">📄 <strong>State Head — Minor / Non-Critical</strong> — WTGs without Major flag. Standard 6hr format.</div>
+  <div class="grid2" style="margin-bottom:10px">
+    <div class="card" style="padding:10px">
+      <div class="grid2">
+        <div>
+          <label class="lb">Min Hours</label>
+          <select id="mn-min">
+            <option value="6">≥ 6 Hrs</option>
+            <option value="10">≥ 10 Hrs</option>
+          </select>
+        </div>
+        <div>
+          <label class="lb">Area Filter</label>
+          <select id="mn-area"><option value="">All Areas</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:10px;display:flex;align-items:center;gap:10px">
+      <button class="btn btn-b btn-full" onclick="genSH('minor')">📄 Generate SH Minor Report</button>
+    </div>
+  </div>
+  <div id="mn-wrap">
+    <div class="btn-row"><button class="btn btn-g" id="mn-copy" onclick="copyOut('mn-out','mn-copy','📋 Copy SH Minor')">📋 Copy SH Minor</button></div>
+    <div class="outbox"><div class="outlbl">SH REPORT — MINOR BD (STATE HEAD)</div><div class="outtxt" id="mn-out"></div></div>
+  </div>
+</div>
+
+<!-- ═══════ FEEDER ═══════ -->
+<div class="panel" id="tab-feeder">
+  <div class="card">
+    <div class="card-head"><div class="ct blue">Report Header</div></div>
+    <div class="grid2">
+      <div><label class="lb">Date</label><input type="text" id="f-date"/></div>
+      <div><label class="lb">Time</label><input type="text" id="f-time"/></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-head">
+        <div class="ct amber">Feeder BD <span id="fbd-auto-badge" style="font-size:8px;color:var(--cyan);display:none">(Auto-read)</span></div>
+        <button class="btn btn-sm btn-o" onclick="refreshFeederAuto()">↻ Re-read Excel</button>
+      </div>
+      <div id="fbd-auto" style="margin-bottom:8px"></div>
+      <div class="divider">Manual BD Entries</div>
+      <div id="fbd-areas"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="ct blue">Feeder LC</div></div>
+      <div id="flc-areas"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="ct green">Feeder Tie-up</div>
+      <button class="btn btn-o btn-sm" onclick="addTieup()">+ Add</button>
+    </div>
+    <div id="tieup-cont"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-g btn-full" onclick="genFeeder()">Generate Feeder Report →</button>
+  </div>
+
+  <div id="feeder-wrap" style="display:none;margin-top:12px">
+    <div class="btn-row"><button class="btn btn-g" id="feeder-copy" onclick="copyOut('feeder-out','feeder-copy','📋 Copy Feeder Report')">📋 Copy Feeder Report</button></div>
+    <div class="outbox"><div class="outlbl">FEEDER STATUS REPORT</div><div class="outtxt" id="feeder-out"></div></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DB — IndexedDB wrapper
+// ═══════════════════════════════════════════════════
+const DB_NAME = 'SuzlonSMS_v5';
+const DB_VER  = 1;
+let _db = null;
+
+function dbOpen() {
+  return new Promise((res, rej) => {
+    if (_db) { res(_db); return; }
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('wtgs'))    db.createObjectStore('wtgs',    { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('state'))   db.createObjectStore('state',   { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('master'))  db.createObjectStore('master',  { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('feeder'))  db.createObjectStore('feeder',  { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('config'))  db.createObjectStore('config',  { keyPath: 'k' });
+    };
+    req.onsuccess = e => { _db = e.target.result; res(_db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+async function dbPutAll(store, items) {
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const s  = tx.objectStore(store);
+    items.forEach(item => s.put(item));
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+
+async function dbGetAll(store) {
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+async function dbPut(store, item) { return dbPutAll(store, [item]); }
+
+async function dbGet(store, key) {
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction(store, 'readonly').objectStore(store).get(key);
+    req.onsuccess = () => res(req.result || null);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+async function dbClear(store) {
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    tx.objectStore(store).clear();
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let WTGs      = [];   // current list [{id,area,site,error,occurred,duration,isNew}]
+let STATE     = {};   // {id:{etr,reason,hidden,majorBD}}
+let MASTER    = {};   // {locNo:{capacity,area,site}}
+let FEEDER_BD = [];   // auto-read from FDR [{feeder,duration,count,description}]
+let FE_MANUAL = {};   // manual feeder entries
+let FE_COUNT  = 0;
+let TIEUP     = [];
+let LAST_LOAD = 0;
+
+const AREAS = ["Bogampatti","Devarkulam","Muthayampatty","Radhapuram","Viliseri"];
+const DEFAULT_TIEUP = [
+  {id:'t1',area:"Muthayampatty",fc:3,desc:"Marudur 22kv SS Power transformer 5 - [Bakkiyalakshmi 22KV, Karvembu 22KV, SIL 22kV] - Feeders tie-up with Marudur 22kv SS Power transformer 4",date:"14-12-25",wc:14},
+  {id:'t2',area:"Muthayampatty",fc:2,desc:"Ponnapuram 33kv SS Power transformer 6 - [Ponnapuram - Madathuppalayam 33KV, Suzlon 33KV 1] - Feeders tie-up with Sadayapalayam 33kv SS - Sadayapalayam - Rohit 33KV Feeder",date:"24-12-25",wc:32},
+  {id:'t3',area:"Viliseri",fc:1,desc:"Chandragiri Feeder 1 tie-up with Feeder 4",date:"28-02-26",wc:12},
+  {id:'t4',area:"Viliseri",fc:1,desc:"Chandragiri Feeder 2 tie-up with Feeder 3",date:"28-02-26",wc:12},
+];
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+const p2 = n => String(n).padStart(2,'0');
+const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function autoDate() {
+  const d = new Date();
+  return `${p2(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;
+}
+function autoTime() {
+  const d = new Date();
+  return `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+}
+function parseDur(v) {
+  if (!v && v !== 0) return 0;
+  const s = v.toString().trim();
+  const m = s.match(/(\d+\.?\d*)/);
+  return m ? parseFloat(m[1]) : 0;
+}
+function fmtDur(v) { return Math.round(parseDur(v)) + ' Hrs'; }
+
+function fmtDateVal(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    return `${p2(val.getDate())}-${months[val.getMonth()]}-${String(val.getFullYear()).slice(2)}`;
+  }
+  const s = val.toString().trim();
+  // DD-MM-YYYY → DD-Mon-YY
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${p2(m[1])}-${months[parseInt(m[2])-1]}-${m[3].slice(2)}`;
+  return s.split(/[\sT]/)[0];
+}
+function fmtTimeVal(val) {
+  if (!val) return '';
+  if (val instanceof Date) return `${p2(val.getHours())}:${p2(val.getMinutes())}`;
+  return val.toString().split(/[\sT]/)[1]?.slice(0,5) || '';
+}
+function esc(s) { return s ? s.toString().replace(/[<>&]/g,'') : ''; }
+function toast(msg, dur=2500) {
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), dur);
+}
+function showLoading(msg) {
+  document.getElementById('ltxt').textContent = msg || 'Processing...';
+  document.getElementById('loading').classList.add('on');
+}
+function hideLoading() { document.getElementById('loading').classList.remove('on'); }
+
+// ═══════════════════════════════════════════════════
+// CLOCK + CYCLE TIMER
+// ═══════════════════════════════════════════════════
+function tick() {
+  const d = new Date();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('hdr-date').textContent =
+    `${days[d.getDay()]}, ${p2(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('hdr-time').textContent =
+    `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+
+  const ct = document.getElementById('cycle-timer');
+  if (!LAST_LOAD) { ct.textContent = 'NO DATA'; return; }
+  const left = 3*3600*1000 - (Date.now() - LAST_LOAD);
+  if (left <= 0) {
+    ct.textContent = '⚠ REFRESH DUE'; ct.className = 'cycle-timer warn';
+  } else {
+    const h = Math.floor(left/3600000), m = Math.floor((left%3600000)/60000), s = Math.floor((left%60000)/1000);
+    ct.textContent = `⏱ ${p2(h)}:${p2(m)}:${p2(s)}`; ct.className = 'cycle-timer';
+  }
+}
+setInterval(tick, 1000); tick();
+
+// ═══════════════════════════════════════════════════
+// TAB NAV
+// ═══════════════════════════════════════════════════
+function goTab(t) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+  document.getElementById('nt-' + t).classList.add('active');
+  if (t === 'sh' || t === 'minor') populateAreaDrops();
+}
+
+// ═══════════════════════════════════════════════════
+// EXCEL PARSER
+// ═══════════════════════════════════════════════════
+function parseWorkbook(ab) {
+  return XLSX.read(ab, { type: 'array', cellDates: true, sheetRows: 0 });
+}
+
+function detectBDSheet(wb) {
+  // Look for BD-like sheet
+  const names = wb.SheetNames;
+  return names.find(n =>
+    n === 'BD Sheet' || n === 'BD' ||
+    n.toLowerCase().includes('bd') ||
+    n.toLowerCase() === 'formula'
+  ) || names[0];
+}
+
+function parseBDRows(wb) {
+  const sn = detectBDSheet(wb);
+  const ws = wb.Sheets[sn];
+  if (!ws) return [];
+
+  // Limit columns to avoid huge empty cells
+  if (ws['!ref']) {
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    range.e.c = Math.min(range.e.c, 22);
+    ws['!ref'] = XLSX.utils.encode_range(range);
+  }
+
+  const data = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false, header: 1 });
+  if (!data.length) return [];
+
+  // Find header row
+  let hRow = -1, H = {};
+  for (let i = 0; i < Math.min(6, data.length); i++) {
+    const r = data[i];
+    const li = r.findIndex(c => typeof c === 'string' && c.toLowerCase().includes('location'));
+    if (li >= 0) {
+      hRow = i;
+      r.forEach((h, j) => {
+        const hh = (h || '').toString().toLowerCase().trim().replace(/\s+/g,' ');
+        if (/loc|location no/.test(hh) && !H.id) H.id = j;
+        if (hh === 'area') H.area = j;
+        if (/^site/.test(hh) && !H.site) H.site = j;
+        if (/main.?site/.test(hh)) H.msite = j;
+        if (/error detail/.test(hh)) H.error = j;
+        if (/error occurred/.test(hh) || hh === 'error occurred time') H.occurred = j;
+        if (/current duration/.test(hh)) H.dur = j;
+        if (hh === 'status') H.status = j;
+        if (/categor/.test(hh)) H.cat = j;
+        if (/customer/.test(hh)) H.cust = j;
+        if (/wtg model/.test(hh)) H.model = j;
+      });
+      break;
+    }
+  }
+  if (hRow < 0) return [];
+
+  const rows = [];
+  for (let i = hRow + 1; i < data.length; i++) {
+    const r = data[i];
+    if (!r || !r.length) continue;
+    const id = (r[H.id] || '').toString().trim();
+    if (!id) continue;
+    const status = (r[H.status] || '').toString().toLowerCase().trim();
+    if (status === 'restored' || status === 'restore') continue;
+    const durRaw = r[H.dur] || '';
+    const dur = parseDur(durRaw);
+    if (dur < 1) continue;
+
+    rows.push({
+      id,
+      area: (r[H.area] || '').toString().trim(),
+      site: (r[H.msite !== undefined ? H.msite : H.site] || r[H.site] || '').toString().trim(),
+      error: (r[H.error] || '').toString().trim(),
+      occurred: r[H.occurred] || '',
+      duration: durRaw.toString(),
+      status: status || 'stopped',
+      category: (r[H.cat] || '').toString().toLowerCase().trim(),
+      customer: (r[H.cust] || '').toString().trim(),
+      model: (r[H.model] || '').toString().trim(),
+    });
+  }
+  return rows;
+}
+
+function parseFDRRows(wb) {
+  // Try FDR sheet
+  const sn = wb.SheetNames.find(n => n.toUpperCase() === 'FDR') || null;
+  if (!sn) return [];
+  const ws = wb.Sheets[sn];
+  if (ws['!ref']) {
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    range.e.c = Math.min(range.e.c, 15);
+    ws['!ref'] = XLSX.utils.encode_range(range);
+  }
+  const data = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false, header: 1 });
+  if (!data.length) return [];
+
+  // Header: Date, Feeder Name, From, TO, ..., Duration/Current Duration, Status, Description, Count
+  // Detect header
+  let hRow = -1, H = {};
+  for (let i = 0; i < 4; i++) {
+    const r = data[i];
+    if (!r) continue;
+    const fi = r.findIndex(c => typeof c === 'string' && c.toLowerCase().includes('feeder'));
+    if (fi >= 0) {
+      hRow = i;
+      r.forEach((h, j) => {
+        const hh = (h || '').toString().toLowerCase().trim().replace(/\s+/g,' ');
+        if (/feeder name/.test(hh)) H.name = j;
+        if (/duration/.test(hh)) H.dur = j;
+        if (hh === 'status') H.status = j;
+        if (/description/.test(hh)) H.desc = j;
+        if (/^count/.test(hh)) H.count = j;
+        if (/^from/.test(hh)) H.from = j;
+      });
+      break;
+    }
+  }
+  if (hRow < 0) return [];
+
+  const rows = [];
+  for (let i = hRow + 1; i < data.length; i++) {
+    const r = data[i];
+    if (!r || !r.length) continue;
+    const name = (r[H.name] || '').toString().trim();
+    if (!name) continue;
+    const status = (r[H.status] || '').toString().toLowerCase().trim();
+    if (status === 'restored' || status === 'restore') continue;
+    const dur = parseDur(r[H.dur]);
+    rows.push({
+      feeder: name,
+      duration: dur,
+      count: parseInt(r[H.count] || 0) || 0,
+      desc: (r[H.desc] || '').toString().trim(),
+      from: fmtDateVal(r[H.from] || ''),
+    });
+  }
+  return rows;
+}
+
+function parseMasterRows(wb) {
+  const sn = wb.SheetNames[0];
+  const ws = wb.Sheets[sn];
+  if (ws['!ref']) {
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    range.e.c = Math.min(range.e.c, 11);
+    ws['!ref'] = XLSX.utils.encode_range(range);
+  }
+  const data = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false, header: 1 });
+  if (!data.length) return {};
+  const hRow = 0;
+  const H = {};
+  const r0 = data[0];
+  r0.forEach((h, j) => {
+    const hh = (h || '').toString().toLowerCase().trim();
+    if (/loc_no|loc no/.test(hh)) H.id = j;
+    if (/inst_capacity|inst capacity/.test(hh)) H.kw = j;
+    if (hh === 'area') H.area = j;
+    if (/main_site|main site/.test(hh)) H.site = j;
+    if (/customer/.test(hh)) H.cust = j;
+  });
+  const map = {};
+  for (let i = 1; i < data.length; i++) {
+    const r = data[i];
+    const id = (r[H.id] || '').toString().trim().toUpperCase();
+    if (!id) continue;
+    map[id] = {
+      capacity: parseDur(r[H.kw] || 0),
+      area: (r[H.area] || '').toString().trim(),
+      site: (r[H.site] || '').toString().trim(),
+    };
+  }
+  return map;
+}
+
+// ═══════════════════════════════════════════════════
+// UPLOAD HANDLERS
+// ═══════════════════════════════════════════════════
+async function uploadBD(files) {
+  if (!files || !files.length) return;
+  showLoading('Reading Excel files...');
+
+  const prevIds = new Set(WTGs.map(w => w.id));
+  const allNewRows = [];
+  let fdrRows = [];
+
+  for (const file of Array.from(files)) {
+    document.getElementById('ltxt').textContent = `Processing: ${file.name}`;
+    await new Promise(res => setTimeout(res, 10));
+    try {
+      const ab = await file.arrayBuffer();
+      const wb = parseWorkbook(ab);
+      const bdRows = parseBDRows(wb);
+      allNewRows.push(...bdRows);
+      const fdr = parseFDRRows(wb);
+      fdrRows.push(...fdr);
+    } catch(e) { console.error('Parse error:', e); }
+  }
+
+  // Deduplicate by id (keep first occurrence)
+  const seen = new Set();
+  const deduped = allNewRows.filter(r => { if(seen.has(r.id)){return false} seen.add(r.id);return true; });
+
+  // Merge with saved state
+  WTGs = deduped.map(row => ({
+    ...row,
+    isNew: !prevIds.has(row.id),
+  }));
+
+  // Store WTGs in DB
+  await dbPutAll('wtgs', WTGs.map(w => ({ id: w.id, ...w })));
+
+  // Store FDR data
+  FEEDER_BD = fdrRows;
+  await dbPut('config', { k: 'feeder_bd', v: JSON.stringify(FEEDER_BD) });
+
+  // Update timestamps
+  LAST_LOAD = Date.now();
+  await dbPut('config', { k: 'last_load', v: LAST_LOAD });
+
+  const newCnt = WTGs.filter(w => w.isNew).length;
+  document.getElementById('bd-title').textContent = `✅ ${files.length} file(s) — ${WTGs.length} WTGs loaded`;
+  document.getElementById('bd-zone').classList.add('done');
+  document.getElementById('bd-status').innerHTML =
+    `<span style="color:var(--green)">${WTGs.length} WTGs</span> • ` +
+    `<span style="color:var(--cyan)">${newCnt} new</span> • ` +
+    `${WTGs.filter(w => parseDur(w.duration) >= 10).length} ≥10hr • ` +
+    `${FEEDER_BD.length} active feeders from FDR`;
+
+  populateDrops();
+  await renderTable();
+  updateStats();
+  renderFeederAuto();
+  hideLoading();
+  if (newCnt > 0) toast(`🆕 ${newCnt} new WTG${newCnt > 1 ? 's' : ''} found!`);
+  else toast('✅ Data loaded & saved');
+}
+
+async function uploadMaster(file) {
+  if (!file) return;
+  showLoading('Loading master data...');
+  try {
+    const ab = await file.arrayBuffer();
+    const wb = parseWorkbook(ab);
+    MASTER = parseMasterRows(wb);
+    const count = Object.keys(MASTER).length;
+    // Save to DB
+    await dbClear('master');
+    const items = Object.entries(MASTER).map(([id, v]) => ({ id, ...v }));
+    await dbPutAll('master', items);
+
+    document.getElementById('master-title').textContent = `✅ ${file.name}`;
+    document.getElementById('master-sub').textContent = `${count} WTG records saved permanently`;
+    document.getElementById('master-zone').classList.add('done');
+    toast(`✅ Master data saved: ${count} WTGs`);
+  } catch(e) { toast('⚠ Master parse error'); console.error(e); }
+  hideLoading();
+}
+
+// ═══════════════════════════════════════════════════
+// STATE HELPERS (auto-save on any change)
+// ═══════════════════════════════════════════════════
+function getState(id) {
+  return STATE[id] || { etr: '', reason: '', hidden: false, majorBD: false };
+}
+async function setState(id, patch) {
+  STATE[id] = { ...getState(id), ...patch };
+  await dbPut('state', { id, ...STATE[id] });
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER TABLE
+// ═══════════════════════════════════════════════════
+async function renderTable() {
+  const tbody = document.getElementById('wtg-tbody');
+  const empty = document.getElementById('pv-empty');
+
+  if (!WTGs.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('nb-preview').textContent = '0';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const minH  = parseFloat(document.getElementById('pv-min').value) || 6;
+  const area  = document.getElementById('pv-area').value;
+  const show  = document.getElementById('pv-show').value;
+
+  const filtered = WTGs.filter(w => {
+    const s = getState(w.id);
+    if (parseDur(w.duration) < minH) return false;
+    if (area && w.area !== area) return false;
+    if (show === 'visible' && s.hidden) return false;
+    if (show === 'hidden' && !s.hidden) return false;
+    if (show === 'new' && !w.isNew) return false;
+    return true;
+  });
+
+  document.getElementById('nb-preview').textContent = filtered.length;
+
+  tbody.innerHTML = filtered.map((w) => {
+    const s = getState(w.id);
+    const dur = parseDur(w.duration);
+    const is10 = dur >= 10;
+    const rowClass = s.hidden ? 'rh' : (w.isNew ? 'rn' : '');
+    return `<tr id="wtr-${esc(w.id)}" class="${rowClass}">
+      <td style="white-space:nowrap">
+        <button class="btn-xs ${s.hidden ? 'xs-g' : 'xs-r'}"
+          onclick="toggleHide('${esc(w.id)}')">${s.hidden ? '↩' : 'Hide'}</button>
+      </td>
+      <td>
+        <span class="tag ${is10 ? 'tr' : 'ta'}">${esc(w.id)}</span>
+        ${w.isNew ? '<span class="tag tnew" style="margin-left:3px">NEW</span>' : ''}
+        ${w._manual ? '<span class="tag tb" style="margin-left:3px">M</span>' : ''}
+      </td>
+      <td style="font-size:9px;color:var(--t2)">${esc(w.area)}</td>
+      <td>${esc(w.site)}</td>
+      <td style="max-width:180px;font-size:9px;word-break:break-word">${esc(w.error)}</td>
+      <td><span class="tag ${is10 ? 'tr' : 'ta'}">${fmtDur(w.duration)}</span></td>
+      <td style="font-size:8px;color:var(--t2);white-space:nowrap">
+        ${fmtDateVal(w.occurred)}<br>${fmtTimeVal(w.occurred)}
+      </td>
+      <td>
+        <input class="etr-inp ${s.etr ? 'has' : ''}" type="text"
+          value="${esc(s.etr)}" placeholder="DD/MM/YY"
+          onchange="setState('${esc(w.id)}',{etr:this.value});this.classList.toggle('has',!!this.value)"
+          ${!is10 ? 'style="opacity:.35"' : ''}
+          title="ETR Date — appears in CEO report"/>
+      </td>
+      <td>
+        <input class="rsn-inp" type="text" value="${esc(s.reason)}"
+          placeholder="Manual stop / WIP..."
+          onchange="setState('${esc(w.id)}',{reason:this.value})"
+          title="Stop reason — appears in SH report"/>
+      </td>
+      <td style="text-align:center">
+        <input type="checkbox" ${s.majorBD ? 'checked' : ''}
+          onchange="setState('${esc(w.id)}',{majorBD:this.checked})"
+          title="Mark as Major BD → appears in SH Major report"
+          style="accent-color:var(--amber);cursor:pointer;width:14px;height:14px"/>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleHide(id) {
+  const s = getState(id);
+  await setState(id, { hidden: !s.hidden });
+  await renderTable();
+  updateStats();
+}
+
+function updateStats() {
+  const all6 = WTGs.filter(w => parseDur(w.duration) >= 6);
+  const vis  = all6.filter(w => !getState(w.id).hidden);
+  const t10  = WTGs.filter(w => parseDur(w.duration) >= 10 && !getState(w.id).hidden);
+  const nw   = WTGs.filter(w => w.isNew);
+  const areas = new Set(WTGs.map(w => w.area).filter(Boolean));
+
+  document.getElementById('st-total').textContent  = all6.length || '—';
+  document.getElementById('st-active').textContent = vis.length  || '—';
+  document.getElementById('st-10hr').textContent   = t10.length  || '—';
+  document.getElementById('st-new').textContent    = nw.length   || '—';
+  document.getElementById('st-areas').textContent  = areas.size  || '—';
+  document.getElementById('st-feeder').textContent = FEEDER_BD.length || '—';
+}
+
+// ═══════════════════════════════════════════════════
+// MANUAL WTG ADD
+// ═══════════════════════════════════════════════════
+let _manCount = 0;
+async function addManualWTG(tab) {
+  const pfx = tab === 'ceo' ? 'cm' : 'm';
+  const id   = document.getElementById(`${pfx}-id`).value.trim();
+  const area = document.getElementById(`${pfx}-area`).value;
+  const site = document.getElementById(`${pfx}-site`).value.trim();
+  const err  = document.getElementById(`${pfx}-error`).value.trim();
+  const dur  = document.getElementById(`${pfx}-dur`).value;
+  const etr  = tab === 'ceo' ? (document.getElementById('cm-etr')?.value.trim() || '') : '';
+
+  if (!id || !err) { toast('⚠ WTG ID and Error Details required'); return; }
+
+  const row = {
+    id: id + '_M' + (++_manCount),
+    area, site, error: err,
+    occurred: new Date(), duration: dur || '0',
+    status: 'stopped', category: 'bd', customer: '', model: '', isNew: true, _manual: true,
+  };
+  WTGs.unshift(row);
+  await dbPut('wtgs', { id: row.id, ...row });
+  if (etr) await setState(row.id, { etr });
+
+  // Clear form
+  ['id','site','error','dur'].forEach(f => {
+    const el = document.getElementById(`${pfx}-${f}`); if(el) el.value='';
+  });
+  if(document.getElementById('cm-etr')) document.getElementById('cm-etr').value='';
+
+  populateDrops();
+  await renderTable();
+  updateStats();
+  toast(`✅ Manual WTG ${id} added`);
+}
+
+// ═══════════════════════════════════════════════════
+// POPULATE DROPDOWNS
+// ═══════════════════════════════════════════════════
+function populateDrops() {
+  const areas = [...new Set(WTGs.map(w => w.area).filter(Boolean))].sort();
+  const opt = areas.map(a => `<option value="${a}">${a}</option>`).join('');
+  const allOpt = '<option value="">All Areas</option>' + opt;
+  ['pv-area','sh-area','mn-area'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.innerHTML = allOpt;
+  });
+  ['m-area','cm-area'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = AREAS.map(a=>`<option value="${a}">${a}</option>`).join('');
+  });
+}
+function populateAreaDrops() { populateDrops(); }
+
+// ═══════════════════════════════════════════════════
+// REPORT GENERATORS
+// ═══════════════════════════════════════════════════
+function nowDateStr() { return autoDate(); }
+function nowTimeStr() { return autoTime(); }
+
+function buildTieupBlock() {
+  syncTieupFromDOM();
+  const total = TIEUP.reduce((s,t) => s + t.fc, 0);
+  const wTotal= TIEUP.reduce((s,t) => s + t.wc, 0);
+  let out = `*Feeder tie-up :${p2(total)} [${wTotal} WTGs]*\n`;
+  const byArea = {};
+  TIEUP.forEach(t => { if(!byArea[t.area]) byArea[t.area]=[]; byArea[t.area].push(t); });
+  for(const [area, entries] of Object.entries(byArea)) {
+    const afc = entries.reduce((s,t) => s + t.fc, 0);
+    out += `\n*${area} - ${p2(afc)}*\n`;
+    entries.forEach((t,i) => { out += `\n${i+1}.${t.desc} _ ${t.date} _ ${t.wc} WTGs\n`; });
+  }
+  return out;
+}
+
+function genCEO() {
+  const date = nowDateStr(), time = nowTimeStr();
+  const wtgs = WTGs.filter(w => !getState(w.id).hidden && parseDur(w.duration) >= 10);
+  wtgs.sort((a,b) => parseDur(b.duration) - parseDur(a.duration));
+
+  let out = `*Mr. CEO Sir Need Your Intervention Required Below WTG*\n\n`;
+  out += `*Above 10 Hrs WTGs Status*\n\n`;
+  out += `*Date : ${date}*\n*Time : ${time}*\n`;
+  out += `*Total WTG's : ${p2(wtgs.length)}*\n\n`;
+
+  wtgs.forEach((w,i) => {
+    const s = getState(w.id);
+    const dur = Math.round(parseDur(w.duration));
+    const etr = s.etr ? `  ETR - ${s.etr}` : '';
+    out += `*${i+1}.* ${w.id} _ ${w.site||w.area} _ ${w.error} _ ${dur} Hrs${etr}\n\n`;
+  });
+
+  out += buildTieupBlock();
+  document.getElementById('ceo-out').textContent = out;
+  document.getElementById('ceo-wrap').style.display = 'block';
+  document.getElementById('ceo-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+function genSH(type) {
+  const isMajor = type === 'major';
+  const date = nowDateStr(), time = nowTimeStr();
+  const minH = parseFloat(document.getElementById(isMajor ? 'sh-min' : 'mn-min').value) || 6;
+  const areaF = document.getElementById(isMajor ? 'sh-area' : 'mn-area').value;
+
+  const wtgs = WTGs.filter(w => {
+    if (getState(w.id).hidden) return false;
+    if (parseDur(w.duration) < minH) return false;
+    if (areaF && w.area !== areaF) return false;
+    const s = getState(w.id);
+    if (isMajor && !s.majorBD) return false;
+    if (!isMajor && s.majorBD) return false;
+    return true;
+  });
+
+  // Group by area
+  const grouped = {};
+  wtgs.forEach(w => { const a = w.area||'Unknown'; if(!grouped[a]) grouped[a]=[]; grouped[a].push(w); });
+
+  let out = isMajor
+    ? `*Kind attention: State Head Sir, Your Intervention Required for the Below WTGs*\n`
+    : `*TN Above ${p2(minH)} Hrs Stoppage WTGS Status:*\n`;
+  out += `\n*Above ${p2(minH)} Hrs WTGs Status*\n\n`;
+  out += `*Date : ${date}*\n*Time : ${time}*\n`;
+  out += `*Total WTG's : ${p2(wtgs.length)}*\n`;
+
+  for(const [area, items] of Object.entries(grouped)) {
+    out += `\n*${area}-${p2(items.length)}*\n`;
+    items.forEach((w,i) => {
+      const s = getState(w.id);
+      const dur = Math.round(parseDur(w.duration));
+      const rsn = s.reason ? ` / ${s.reason}` : '';
+      out += `\n*${i+1}.* ${w.id} _ ${w.site||w.area} _ ${w.error}${rsn} _ ${dur} Hrs\n`;
+    });
+  }
+  out += '\n' + buildTieupBlock();
+
+  if (isMajor) {
+    document.getElementById('sh-out').textContent = out;
+    document.getElementById('sh-wrap').style.display = 'block';
+    document.getElementById('sh-wrap').scrollIntoView({behavior:'smooth'});
+  } else {
+    document.getElementById('mn-out').textContent = out;
+    document.getElementById('mn-wrap').style.display = 'block';
+    document.getElementById('mn-wrap').scrollIntoView({behavior:'smooth'});
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// FEEDER
+// ═══════════════════════════════════════════════════
+function initFeeder() {
+  document.getElementById('f-date').value = autoDate();
+  document.getElementById('f-time').value = autoTime();
+  buildFeederAreas();
+  buildTieup();
+}
+
+function renderFeederAuto() {
+  const container = document.getElementById('fbd-auto');
+  const badge = document.getElementById('fbd-auto-badge');
+  if (!FEEDER_BD.length) {
+    container.innerHTML = '<div style="color:var(--t3);font-size:9px">No active BD feeders from Excel</div>';
+    badge.style.display = 'none';
+    return;
+  }
+  badge.style.display = 'inline';
+  container.innerHTML = FEEDER_BD.map((f, i) => `
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:4px;padding:7px 10px;margin-bottom:5px;font-size:9px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--cyan);font-weight:700">${esc(f.feeder)}</span>
+        <span class="tag tr">${fmtDur(f.duration)}</span>
+      </div>
+      <div style="color:var(--t2);margin-top:3px">${esc(f.desc)} ${f.count ? `• ${f.count} WTGs` : ''}</div>
+    </div>`).join('');
+  updateStats();
+}
+
+function refreshFeederAuto() {
+  renderFeederAuto();
+  toast('↻ Feeder auto data refreshed');
+}
+
+function buildFeederAreas() {
+  ['fbd','flc'].forEach(type => {
+    const el = document.getElementById(`${type}-areas`);
+    if (!el) return;
+    el.innerHTML = AREAS.map(area => `
+      <div class="ablock">
+        <div class="ahead">
+          <span class="aname">📍 ${area}</span>
+          <button class="btn btn-sm btn-o" onclick="addFE('${type}','${area}')">+ Add</button>
+        </div>
+        <div id="${type}-ent-${area}"><div style="color:var(--t3);font-size:9px">NIL</div></div>
+      </div>`).join('');
+  });
+}
+
+function addFE(type, area) {
+  const key = `${type}-${area}`, idx = ++FE_COUNT;
+  if (!FE_MANUAL[key]) FE_MANUAL[key] = [];
+  FE_MANUAL[key].push(idx);
+  renderFE(type, area);
+}
+function removeFE(type, area, idx) {
+  const key = `${type}-${area}`;
+  FE_MANUAL[key] = (FE_MANUAL[key] || []).filter(i => i !== idx);
+  renderFE(type, area);
+}
+function renderFE(type, area) {
+  const key = `${type}-${area}`, entries = FE_MANUAL[key] || [];
+  const c = document.getElementById(`${type}-ent-${area}`);
+  if (!entries.length) { c.innerHTML = '<div style="color:var(--t3);font-size:9px">NIL</div>'; return; }
+  c.innerHTML = entries.map((idx, i) => `
+    <div class="fent">
+      <div class="fhdr">
+        <span style="font-size:9px;color:var(--t2)">Entry ${i+1}</span>
+        <button class="btn-xs xs-r" onclick="removeFE('${type}','${area}',${idx})">✕</button>
+      </div>
+      <div class="grid2" style="margin-bottom:5px">
+        <div><label class="lb">Description</label>
+          <textarea id="fe-desc-${idx}" rows="2" placeholder="Feeder name..."></textarea></div>
+        <div>
+          <div class="field"><label class="lb">Date</label><input type="text" id="fe-date-${idx}" placeholder="28-03-26"/></div>
+          <div><label class="lb">WTG Count</label><input type="number" id="fe-wtg-${idx}" min="0" placeholder="10"/></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// TIEUP
+function buildTieup() {
+  const c = document.getElementById('tieup-cont'); c.innerHTML = '';
+  TIEUP.forEach((_, i) => { const d = document.createElement('div'); d.id = `tu-${i}`; c.appendChild(d); renderTU(i); });
+}
+function addTieup() {
+  TIEUP.push({ id: 'tu_' + Date.now(), area: AREAS[0], fc: 1, desc: '', date: '', wc: 0 });
+  const c = document.getElementById('tieup-cont'), d = document.createElement('div');
+  d.id = `tu-${TIEUP.length-1}`; c.appendChild(d); renderTU(TIEUP.length-1);
+}
+function removeTU(i) { TIEUP.splice(i,1); buildTieup(); }
+function renderTU(i) {
+  const t = TIEUP[i], el = document.getElementById(`tu-${i}`); if(!el) return;
+  el.innerHTML = `
+    <div class="tuent">
+      <div class="fhdr">
+        <span style="font-size:9px;font-weight:700;color:var(--green)">Tie-up ${i+1}</span>
+        <button class="btn-xs xs-r" onclick="removeTU(${i})">✕</button>
+      </div>
+      <div class="grid2" style="margin-bottom:6px">
+        <div><label class="lb">Area</label>
+          <select id="tu-ar-${i}">${AREAS.map(a=>`<option${a===t.area?' selected':''}>${a}</option>`).join('')}</select></div>
+        <div class="grid2">
+          <div><label class="lb">Feeders</label><input type="number" id="tu-fc-${i}" value="${t.fc}" min="1"/></div>
+          <div><label class="lb">WTGs</label><input type="number" id="tu-wc-${i}" value="${t.wc}" min="0"/></div>
+        </div>
+      </div>
+      <div class="field"><label class="lb">Description</label><textarea id="tu-ds-${i}" rows="2">${esc(t.desc)}</textarea></div>
+      <div><label class="lb">Date</label><input type="text" id="tu-dt-${i}" value="${t.date}" placeholder="28-02-26"/></div>
+    </div>`;
+}
+function syncTieupFromDOM() {
+  TIEUP.forEach((t,i) => {
+    t.area = document.getElementById(`tu-ar-${i}`)?.value || t.area;
+    t.fc   = parseInt(document.getElementById(`tu-fc-${i}`)?.value) || t.fc;
+    t.wc   = parseInt(document.getElementById(`tu-wc-${i}`)?.value) || t.wc;
+    t.desc = document.getElementById(`tu-ds-${i}`)?.value || t.desc;
+    t.date = document.getElementById(`tu-dt-${i}`)?.value || t.date;
+  });
+  dbPut('config', { k: 'tieup', v: JSON.stringify(TIEUP) });
+}
+
+function genFeeder() {
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value;
+
+  function getME(type, area) {
+    const key = `${type}-${area}`;
+    return (FE_MANUAL[key] || []).map(idx => ({
+      desc: (document.getElementById(`fe-desc-${idx}`)?.value || '').trim(),
+      date: (document.getElementById(`fe-date-${idx}`)?.value || '').trim(),
+      wtg:  parseInt(document.getElementById(`fe-wtg-${idx}`)?.value || 0),
+    })).filter(e => e.desc);
+  }
+
+  let bdTotal = 0, bdWtgs = 0, lcTotal = 0, lcWtgs = 0;
+  AREAS.forEach(a => {
+    const bd = getME('fbd',a), lc = getME('flc',a);
+    bdTotal += bd.length; bdWtgs += bd.reduce((s,e)=>s+e.wtg,0);
+    lcTotal += lc.length; lcWtgs += lc.reduce((s,e)=>s+e.wtg,0);
+  });
+  // Add auto feeder BD
+  bdTotal += FEEDER_BD.length;
+  bdWtgs  += FEEDER_BD.reduce((s,f)=>s+f.count,0);
+
+  let out = `*TN Above 06 Hrs Stoppage Feeder Status*\n\n`;
+  out += `*Date : ${date}*\n*Time : ${time}*\n\n`;
+  out += `*Feeder BD : ${p2(bdTotal)} [ ${p2(bdWtgs)} WTGs]*\n`;
+  out += `*Feeder LC :${p2(lcTotal)} [ ${p2(lcWtgs)} WTGs ]*\n`;
+
+  AREAS.forEach(a => {
+    const bd = getME('fbd',a);
+    if(bd.length){out+=`\n*${a} - ${bd.length}*\n`;bd.forEach((e,i)=>{out+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;});}
+    else{out+=`\n*${a} - NIL*\n`;}
+  });
+  if(FEEDER_BD.length){
+    out += `\n*Auto FDR BD*\n`;
+    FEEDER_BD.forEach((f,i)=>{out+=`\n${i+1}.${f.feeder} _ ${f.from} _ ${f.count} WTGs\n`;});
+  }
+  out += '\n';
+
+  const anyLC = AREAS.some(a=>getME('flc',a).length>0);
+  if(anyLC){AREAS.forEach(a=>{const lc=getME('flc',a);if(lc.length){out+=`\n*${a} LC - ${lc.length}*\n`;lc.forEach((e,i)=>{out+=`\n${i+1}.${e.desc} _ ${e.date} _ ${e.wtg} WTGs\n`;});}});out+='\n';}
+
+  out += buildTieupBlock();
+
+  document.getElementById('feeder-out').textContent = out;
+  document.getElementById('feeder-wrap').style.display = 'block';
+  document.getElementById('feeder-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════
+// COPY
+// ═══════════════════════════════════════════════════
+function copyOut(outId, btnId, orig) {
+  const text = document.getElementById(outId).textContent;
+  const btn  = document.getElementById(btnId);
+  const ok = () => {
+    btn.textContent = '✅ Copied!';
+    document.getElementById(outId).classList.add('copy-ok');
+    setTimeout(() => { btn.textContent = orig; document.getElementById(outId).classList.remove('copy-ok'); }, 2200);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(ok).catch(() => fallback(text, ok));
+  } else { fallback(text, ok); }
+}
+function fallback(text, ok) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); ok(); } catch { alert('Copy manually pannu'); }
+  document.body.removeChild(ta);
+}
+
+// ═══════════════════════════════════════════════════
+// CLEAR / RESET
+// ═══════════════════════════════════════════════════
+async function clearBDOnly() {
+  if (!confirm('Clear current BD data? Saved ETR/reasons will be kept.')) return;
+  await dbClear('wtgs');
+  WTGs = []; FEEDER_BD = [];
+  renderTable(); updateStats(); renderFeederAuto();
+  toast('🗑 BD data cleared');
+}
+async function clearAll() {
+  if (!confirm('⚠ Clear ALL data including ETR dates, reasons? This cannot be undone.')) return;
+  await dbClear('wtgs'); await dbClear('state'); await dbClear('config');
+  WTGs = []; STATE = {}; FEEDER_BD = []; LAST_LOAD = 0;
+  renderTable(); updateStats(); renderFeederAuto();
+  document.getElementById('bd-info').textContent = 'All data cleared';
+  toast('⚠ All data cleared');
+}
+
+// ═══════════════════════════════════════════════════
+// BOOT — Load saved data from IndexedDB
+// ═══════════════════════════════════════════════════
+async function boot() {
+  showLoading('Loading saved data...');
+  try {
+    // Load config
+    const cfg = await dbGetAll('config');
+    cfg.forEach(c => {
+      if(c.k === 'last_load') LAST_LOAD = c.v || 0;
+      if(c.k === 'tieup') { try { TIEUP = JSON.parse(c.v) || DEFAULT_TIEUP; } catch { TIEUP = [...DEFAULT_TIEUP.map(t=>({...t}))]; } }
+      if(c.k === 'feeder_bd') { try { FEEDER_BD = JSON.parse(c.v) || []; } catch { FEEDER_BD = []; } }
+    });
+    if (!TIEUP.length) TIEUP = [...DEFAULT_TIEUP.map(t=>({...t}))];
+
+    // Load WTGs
+    const wtgRows = await dbGetAll('wtgs');
+    WTGs = wtgRows.map(r => { const {id,...rest}=r; return {id,...rest}; });
+
+    // Load state (ETR, reason, hidden, majorBD)
+    const stRows = await dbGetAll('state');
+    stRows.forEach(s => { STATE[s.id] = {etr:s.etr,reason:s.reason,hidden:s.hidden,majorBD:s.majorBD}; });
+
+    // Load master
+    const masterRows = await dbGetAll('master');
+    masterRows.forEach(r => { MASTER[r.id] = {capacity:r.capacity,area:r.area,site:r.site}; });
+
+    // Update UI
+    const masterCount = Object.keys(MASTER).length;
+    if (masterCount > 0) {
+      document.getElementById('master-title').textContent = `✅ Master Data Loaded`;
+      document.getElementById('master-sub').textContent = `${masterCount} WTG records saved`;
+      document.getElementById('master-zone').classList.add('done');
+    }
+
+    if (WTGs.length > 0) {
+      document.getElementById('bd-title').textContent = `✅ ${WTGs.length} WTGs (saved data)`;
+      document.getElementById('bd-zone').classList.add('done');
+      document.getElementById('nb-preview').textContent = WTGs.length;
+    }
+
+    populateDrops();
+    await renderTable();
+    updateStats();
+    renderFeederAuto();
+    buildTieup();
+
+    const loaded = WTGs.length;
+    document.getElementById('db-info').innerHTML =
+      `<span style="color:var(--green)">✓</span> ${loaded} WTGs in DB • ` +
+      `${Object.keys(STATE).length} saved states • ${masterCount} master records • ` +
+      (LAST_LOAD ? `Last load: ${new Date(LAST_LOAD).toLocaleString()}` : 'No data loaded yet');
+
+  } catch(e) {
+    console.error('Boot error:', e);
+    TIEUP = [...DEFAULT_TIEUP.map(t=>({...t}))];
+    buildTieup();
+    document.getElementById('db-info').textContent = 'IndexedDB error — refresh page';
+  }
+  hideLoading();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && e.key === '1') { e.preventDefault(); goTab('upload'); }
+  if ((e.ctrlKey||e.metaKey) && e.key === '2') { e.preventDefault(); goTab('preview'); }
+  if ((e.ctrlKey||e.metaKey) && e.key === '3') { e.preventDefault(); goTab('ceo'); }
+  if ((e.ctrlKey||e.metaKey) && e.key === '4') { e.preventDefault(); goTab('sh'); }
+});
+
+// Init
+initFeeder();
+boot();
+</script>
+</body>
+</html>
