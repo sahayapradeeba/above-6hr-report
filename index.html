@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TN WTG Report Generator Pro</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,Arial,sans-serif;background:#0f172a;color:#e2e8f0} .wrap{max-width:1400px;margin:auto;padding:20px} .card{background:#111827;border:1px solid #1f2937;border-radius:20px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)} h1,h2,h3{margin:0 0 12px} .grid{display:grid;gap:16px} .g2{grid-template-columns:1.2fr .8fr} .g3{grid-template-columns:repeat(3,1fr)} @media(max-width:980px){.g2,.g3{grid-template-columns:1fr}} input,select,textarea,button{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #334155;background:#0b1220;color:#fff} button{cursor:pointer;background:linear-gradient(135deg,#2563eb,#7c3aed);border:none;font-weight:700} button.secondary{background:#1e293b} button.success{background:linear-gradient(135deg,#059669,#10b981)} button.warn{background:linear-gradient(135deg,#ea580c,#f59e0b)} .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}.c3{grid-column:span 3}.c4{grid-column:span 4}.c6{grid-column:span 6}.c12{grid-column:span 12}@media(max-width:980px){.c3,.c4,.c6,.c12{grid-column:span 12}} .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#0b1220;border:1px solid #334155;margin:4px 6px 0 0;font-size:12px} .muted{color:#94a3b8;font-size:13px} .toolbar{display:flex;flex-wrap:wrap;gap:10px} .toolbar button{width:auto} textarea{min-height:520px;resize:vertical;white-space:pre-wrap} table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:10px;border-bottom:1px solid #243042;text-align:left} .small{font-size:12px;color:#94a3b8} .ok{color:#34d399}.err{color:#f87171} .tag{background:#172554;border:1px solid #1d4ed8;color:#bfdbfe;padding:4px 8px;border-radius:999px;font-size:12px}
+  </style>
+</head>
+<body>
+<div class="wrap grid g2">
+  <div class="grid">
+    <div class="card">
+      <h1>⚡ TN WTG Report Generator Pro</h1>
+      <div class="muted">5 area sheets + master data + persistent manual edits + auto formatted reports</div>
+      <div class="row" style="margin-top:14px">
+        <div class="c4"><label>Date</label><input id="reportDate" type="text" placeholder="01-Apr-26"></div>
+        <div class="c4"><label>Time</label><input id="reportTime" type="text" placeholder="15:30"></div>
+        <div class="c4"><label>Report Type</label><select id="reportType">
+          <option value="above6wtg">Above 06Hr WTGS</option>
+          <option value="above6feeder">Above 06Hr Feeder</option>
+          <option value="sh6minor">State Head Above 06Hr Minor</option>
+          <option value="ceo10">CEO Above 10Hr</option>
+          <option value="minor10">Above 10Hr Minor BD</option>
+        </select></div>
+        <div class="c6"><label>Master Data</label><input id="masterFile" type="file" accept=".xlsx,.xls"></div>
+        <div class="c6"><label>6Hr / Existing Report Sheet (optional)</label><input id="existingFile" type="file" accept=".xlsx,.xls"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div class="c12"><label>Area Sheets (upload all 5 or available area files)</label><input id="areaFiles" type="file" multiple accept=".xlsx,.xls"></div>
+      </div>
+      <div class="toolbar" style="margin-top:16px">
+        <button onclick="loadAllFiles()">📥 Load Excel Data</button>
+        <button class="success" onclick="generateReport()">🚀 Generate Report</button>
+        <button class="secondary" onclick="copyOutput()">📋 Copy Output</button>
+        <button class="warn" onclick="downloadBackup()">💾 Export Saved DB</button>
+        <button class="secondary" onclick="document.getElementById('importBackup').click()">📂 Import Saved DB</button>
+        <input id="importBackup" type="file" accept=".json" style="display:none" onchange="importBackup(event)">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧠 Persistent Manual Database</h2>
+      <div class="muted">Once you type stop reason / ETR / action, it won't vanish after refresh.</div>
+      <div class="row" style="margin-top:12px">
+        <div class="c3"><label>WTG Code</label><input id="dbCode" placeholder="P19 / KD133"></div>
+        <div class="c3"><label>Capacity</label><input id="dbCapacity" placeholder="1250 / 1500 / 2100"></div>
+        <div class="c3"><label>ETR</label><input id="dbETR" placeholder="05/04/26"></div>
+        <div class="c3"><label>Status</label><input id="dbStatus" placeholder="WIP / No response / Planned"></div>
+        <div class="c12"><label>Manual Reason / Action Taken</label><textarea id="dbReason" style="min-height:120px" placeholder="Type final stop reason / action..."></textarea></div>
+      </div>
+      <div class="toolbar" style="margin-top:12px">
+        <button onclick="saveManualDB()">➕ Save / Update Manual Entry</button>
+        <button class="secondary" onclick="searchManualDB()">🔎 Search</button>
+        <button class="warn" onclick="clearManualDBEntry()">🗑️ Clear This Entry</button>
+      </div>
+      <div id="dbInfo" class="small" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Loaded Data Preview</h2>
+      <div id="statusBox" class="small">No files loaded yet.</div>
+      <div style="max-height:340px;overflow:auto;margin-top:12px">
+        <table id="previewTable"><thead><tr><th>Code</th><th>Area</th><th>Site</th><th>Capacity</th><th>Error</th><th>Hrs</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📝 Output</h2>
+    <div class="toolbar" style="margin-bottom:10px">
+      <span class="tag">Auto lookup by Code + Capacity</span>
+      <span class="tag">Current filtered rows only</span>
+      <span class="tag">Feeder from same area sheet</span>
+    </div>
+    <textarea id="output" placeholder="Generated report will appear here..."></textarea>
+  </div>
+</div>
+
+<script>
+let APP = {
+  master: [],
+  rawRows: [],
+  feederRows: [],
+  manualDB: JSON.parse(localStorage.getItem('wtgManualDB') || '{}')
+};
+
+const AREA_ORDER = ['Bogampatti','Devarkulam','Muthayampatty','Radhapuram','Viliseri'];
+const AREA_ALIASES = { 'Muthyampatty':'Muthayampatty','Mathayampatty':'Muthayampatty','Villiseri':'Viliseri','VLSR':'Viliseri','DEV':'Devarkulam','BDPM':'Bogampatti','RDPM':'Radhapuram' };
+
+function norm(v=''){ return String(v ?? '').replace(/\s+/g,' ').trim(); }
+function num(v){ const x=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(x)?0:x; }
+function capNorm(v){ const s=String(v??'').trim(); if(!s) return ''; const n=num(s); if(!n) return s; if(n<10) return String(Math.round(n*1000)); return String(Math.round(n)); }
+function areaNorm(v=''){ const x=norm(v); return AREA_ALIASES[x] || x; }
+function fmtDate(v){ if(!v) return ''; if(typeof v==='string') return v.trim(); try{ const d = new Date(v); if(isNaN(d)) return String(v); const dd=String(d.getDate()).padStart(2,'0'); const mm=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]; const yy=String(d.getFullYear()).slice(-2); return `${dd}-${mm}-${yy}`; }catch{return String(v)} }
+function hrsBetween(start){ if(!start) return 0; const d=new Date(start); if(isNaN(d)) return 0; return Math.floor((Date.now()-d.getTime())/36e5); }
+function keyFor(code, cap){ return `${norm(code).toUpperCase()}|${capNorm(cap)}`; }
+
+function saveLS(){ localStorage.setItem('wtgManualDB', JSON.stringify(APP.manualDB)); }
+function setStatus(html){ document.getElementById('statusBox').innerHTML = html; }
+
+async function readWorkbook(file){ const data = await file.arrayBuffer(); return XLSX.read(data,{type:'array'}); }
+function sheetToRows(wb, sheetName){ return XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:''}); }
+
+function findCol(row, candidates){ const keys = Object.keys(row); for(const c of candidates){ const hit = keys.find(k => norm(k).toLowerCase() === c.toLowerCase()); if(hit) return hit; } for(const c of candidates){ const hit = keys.find(k => norm(k).toLowerCase().includes(c.toLowerCase())); if(hit) return hit; } return null; }
+
+function mapMasterRows(rows){
+  return rows.map(r => ({
+    code: norm(r.LOC_NO || r.Code || r.CODE || r.WTG || r['WTG Code'] || r['Loc No']),
+    capacity: capNorm(r.INST_CAPACITY || r.Capacity || r['WIG Model'] || r['WTG Capacity']),
+    area: areaNorm(r.AREA || r.Area || r.LOCATION || r.Location),
+    site: norm(r.MAIN_SITE || r.Site || r['MAIN SITE']),
+    feederName: norm(r.FEEDER_NAME || r['Feeder Name']),
+    customerName: norm(r.MKT_GROUP_NAME || r.CUSTOMER_NAME || r['Customer Name']),
+    model: capNorm(r.WTG_MODEL_NAME || r['WIG Model'] || r.Model || r.Capacity)
+  })).filter(x => x.code);
+}
+
+function mapAreaRows(rows, fileName=''){
+  const out=[];
+  rows.forEach(r => {
+    const vals = Object.fromEntries(Object.entries(r).map(([k,v])=>[norm(k),v]));
+    const code = norm(vals['Code'] || vals['WTG Code'] || vals['LOC_NO'] || vals['Loc No'] || vals['Location'] || vals['WTG']);
+    const error = norm(vals['Error Details'] || vals['Error'] || vals['Description'] || vals['Fault'] || vals['Alarm']);
+    const capacity = capNorm(vals['WIG Model'] || vals['Capacity'] || vals['KW'] || vals['kW'] || vals['Model']);
+    const area = areaNorm(vals['Location'] || vals['Area'] || vals['AREA'] || vals['Main Area'] || fileName.replace(/\.[^.]+$/,''));
+    const site = norm(vals['Site'] || vals['Sub Site'] || vals['Village'] || vals['Location Name']);
+    const customerName = norm(vals['Customer Name'] || vals['Customer'] || vals['CustomerName']);
+    const errorOccurredTime = vals['Error Occaned Tiaur'] || vals['Error Occurred Time'] || vals['Error Time'] || vals['Stop Time'] || vals['Date'] || vals['Start Time'];
+    const attendTime = vals['Error Attend Time'] || vals['Attend Time'];
+    const restoreTime = vals['Restore Time'] || vals['RestoreTime'];
+    const duration = vals['Duration'] || vals['Hrs'] || vals['Hours'];
+    const status = norm(vals['Status'] || vals['Working']);
+    const category = norm(vals['Category']);
+    const actionTaken = norm(vals['Action Taken'] || vals['Reason']);
+    const feederName = norm(vals['Feeder Name'] || vals['Feeder'] || vals['Feeder BD/LC']);
+    const feederType = norm(vals['Feeder Type'] || vals['BD/LC'] || vals['Feeder Status']);
+    const feederWtgs = num(vals['WTGs'] || vals['WTG Count'] || vals['Count']);
+    const etr = norm(vals['ETR'] || vals['Restore ETA']);
+    const tieUpDetails = norm(vals['Tie Up Details'] || vals['Remarks']);
+
+    if(code || feederName){
+      out.push({code,capacity,area,site,customerName,errorDetails:error,errorOccurredTime,attendTime,restoreTime,durationRaw:duration,durationHrs:num(duration)||hrsBetween(errorOccurredTime),status,category,actionTaken,feederName,feederType: feederType.toUpperCase().includes('LC')?'LC':feederType.toUpperCase().includes('TIE')?'TIEUP':feederType.toUpperCase().includes('BD')?'BD':'',feederWtgs,etr,tieUpDetails,source:fileName});
+    }
+  });
+  return out;
+}
+
+function mergeWithMaster(rows){
+  return rows.map(r => {
+    const match = APP.master.find(m => m.code.toUpperCase()===r.code.toUpperCase() && (!r.capacity || m.capacity===r.capacity)) || APP.master.find(m => m.code.toUpperCase()===r.code.toUpperCase());
+    const k = keyFor(r.code, r.capacity || match?.capacity || '');
+    const saved = APP.manualDB[k] || APP.manualDB[r.code.toUpperCase()] || {};
+    return {
+      ...r,
+      area: areaNorm(r.area || match?.area || ''),
+      site: r.site || match?.site || '',
+      customerName: r.customerName || match?.customerName || '',
+      wtgModel: r.capacity || match?.capacity || '',
+      feederName: r.feederName || match?.feederName || '',
+      errorDetails: saved.reason ? `${r.errorDetails || ''}${r.errorDetails ? ' / ' : ''}${saved.reason}` : (r.errorDetails || ''),
+      manualReason: saved.reason || '',
+      etr: saved.etr || r.etr || '',
+      manualStatus: saved.status || r.status || '',
+      actionTaken: saved.reason || r.actionTaken || ''
+    };
+  });
+}
+
+async function loadAllFiles(){
+  try{
+    APP.master=[]; APP.rawRows=[]; APP.feederRows=[];
+    const masterFile = document.getElementById('masterFile').files[0];
+    const existingFile = document.getElementById('existingFile').files[0];
+    const areaFiles = [...document.getElementById('areaFiles').files];
+    if(!masterFile && !areaFiles.length && !existingFile){ alert('At least one file upload pannu da'); return; }
+
+    let status=[];
+    if(masterFile){
+      const wb = await readWorkbook(masterFile);
+      let all=[]; wb.SheetNames.forEach(s => all.push(...sheetToRows(wb,s)));
+      APP.master = mapMasterRows(all);
+      status.push(`✅ Master loaded: <b>${APP.master.length}</b> rows`);
+    }
+
+    const combined=[];
+    if(existingFile){
+      const wb = await readWorkbook(existingFile);
+      wb.SheetNames.forEach(s => combined.push(...mapAreaRows(sheetToRows(wb,s), `${existingFile.name} / ${s}`)));
+      status.push(`✅ Existing report loaded`);
+    }
+
+    for(const f of areaFiles){
+      const wb = await readWorkbook(f);
+      wb.SheetNames.forEach(s => combined.push(...mapAreaRows(sheetToRows(wb,s), `${f.name} / ${s}`)));
+      status.push(`✅ ${f.name} loaded`);
+    }
+
+    APP.rawRows = mergeWithMaster(combined.filter(x => x.code));
+    APP.feederRows = mergeWithMaster(combined.filter(x => x.feederType || x.feederName));
+    renderPreview(APP.rawRows);
+    setStatus(status.join('<br>') + `<br><br><span class='ok'>Final WTG rows:</span> <b>${APP.rawRows.length}</b> | <span class='ok'>Feeder rows:</span> <b>${APP.feederRows.length}</b>`);
+  }catch(e){ console.error(e); setStatus(`<span class='err'>Error loading files: ${e.message}</span>`); }
+}
+
+function renderPreview(rows){
+  const tb = document.querySelector('#previewTable tbody'); tb.innerHTML='';
+  rows.slice(0,120).forEach(r=>{
+    tb.innerHTML += `<tr><td>${r.code||''}</td><td>${r.area||''}</td><td>${r.site||''}</td><td>${r.wtgModel||''}</td><td>${(r.errorDetails||'').slice(0,70)}</td><td>${r.durationHrs||0}</td></tr>`;
+  });
+}
+
+function getCurrentRows(){ return APP.rawRows.filter(r => r.code && r.errorDetails); }
+function getCurrentFeeders(){ return APP.feederRows; }
+
+function groupByArea(rows){ const g={}; AREA_ORDER.forEach(a=>g[a]=[]); rows.forEach(r=>{ const a=areaNorm(r.area||'Others'); if(!g[a]) g[a]=[]; g[a].push(r); }); return g; }
+function sumWtgs(rows){ return rows.reduce((s,r)=>s+num(r.feederWtgs||0),0); }
+
+function generateAbove6WTG(rows){
+  rows = rows.filter(r=>num(r.durationHrs)>=6).sort((a,b)=>AREA_ORDER.indexOf(areaNorm(a.area))-AREA_ORDER.indexOf(areaNorm(b.area)));
+  const grouped = groupByArea(rows);
+  let out = `*TN Above 06 Hrs Stoppage WTGS Status:*\n\n*Date : ${document.getElementById('reportDate').value}*\n\n*Time : ${document.getElementById('reportTime').value}*\n\n*Total WTG’s : ${rows.length}*\n\n`;
+  AREA_ORDER.forEach(area=>{
+    const arr = grouped[area]||[]; if(!arr.length) return;
+    out += `*${area}-${arr.length}*\n\n`;
+    arr.forEach((r,i)=>{
+      out += `*${i+1}.* ${r.code} _ ${r.errorDetails} _ ${r.wtgModel || '-'} _ ${fmtDate(r.errorOccurredTime)} _ ${String(r.errorOccurredTime).match(/\d{1,2}:\d{2}/)?.[0]||''} _ *${r.customerName || '-'}*\n\n`;
+    });
+  });
+  return out.trim();
+}
+
+function generateAbove6Feeder(feeders){
+  const bd = feeders.filter(r=>r.feederType==='BD');
+  const lc = feeders.filter(r=>r.feederType==='LC');
+  const tie = feeders.filter(r=>r.feederType==='TIEUP' || /tie/i.test(r.tieUpDetails||r.feederName||''));
+  const bdArea = groupByArea(bd);
+  const tieArea = groupByArea(tie);
+  let out = `*TN Above 06 Hrs Stoppage Feeder Status*\n\n*Date : ${document.getElementById('reportDate').value}*\n\n*Time : ${document.getElementById('reportTime').value}*\n\n*Feeder BD : ${String(bd.length).padStart(2,'0')} [ ${sumWtgs(bd)} WTGs]*\n\n*Feeder LC :${String(lc.length).padStart(2,'0')} [ ${sumWtgs(lc)} WTGs ]*\n\n`;
+  AREA_ORDER.forEach(area=>{
+    const arr = bdArea[area]||[];
+    out += `*${area} - ${arr.length?arr.length:'NIL'}*\n\n`;
+    arr.forEach((r,i)=> out += `*${i+1}.${r.feederName}-Feeder BD-${r.errorOccurredTime || '-'}-${r.feederWtgs || 0}WTGs-ËTR-${r.etr || '-'}*\n\n`);
+  });
+  out += ` \n*Feeder tie-up :${String(tie.length).padStart(2,'0')} [${sumWtgs(tie)} WTGs]*\n\n`;
+  AREA_ORDER.forEach(area=>{
+    const arr = tieArea[area]||[]; if(!arr.length) return;
+    out += `*${area} - ${String(arr.length).padStart(2,'0')}*\n\n`;
+    arr.forEach((r,i)=> out += `${i+1}.${r.feederName || '-'} - ${r.tieUpDetails || '-'} _ ${r.errorOccurredTime || '-'} _ ${r.feederWtgs || 0} WTGs\n\n`);
+  });
+  return out.trim();
+}
+
+function generateSH6Minor(rows, feeders){
+  rows = rows.filter(r=>num(r.durationHrs)>=6).sort((a,b)=>num(b.durationHrs)-num(a.durationHrs));
+  const grouped = groupByArea(rows);
+  const bd = feeders.filter(r=>r.feederType==='BD');
+  const tie = feeders.filter(r=>r.feederType==='TIEUP' || /tie/i.test(r.tieUpDetails||r.feederName||''));
+  let out = `*Mr. State Head Sir Need Your Intervention Required Below WTG*\n\n*Above 06 Hrs WTGs Status*\n\n*Total WTG’s : ${rows.length}*\n\n`;
+  AREA_ORDER.forEach(area=>{
+    const arr = grouped[area]||[]; if(!arr.length) return;
+    out += `*${area}-${arr.length}*\n\n`;
+    arr.forEach((r,i)=> out += `*${i+1}.* ${r.code} _ ${r.site || area} _ ${r.errorDetails} _ ${r.durationHrs} Hrs\n\n`);
+  });
+  out += `\n*Feeder BD : ${String(bd.length).padStart(2,'0')} [ ${sumWtgs(bd)} WTGs]*\n\n*Feeder LC :00 [ 00 WTGs ]*\n\n`;
+  bd.forEach((r,i)=> out += `${i+1}.${r.feederName}- Feeder BD _${r.errorOccurredTime || '-'} _ [ ${r.feederWtgs || 0}WTGs_] ETR _ ${r.etr || '-'}\n\n`);
+  out += ` \n*Feeder tie-up :${String(tie.length).padStart(2,'0')} [${sumWtgs(tie)} WTGs]*\n\n`;
+  tie.forEach((r,i)=> out += `${i+1}.${r.feederName || '-'} - ${r.tieUpDetails || '-'} _ ${r.errorOccurredTime || '-'} _ ${r.feederWtgs || 0} WTGs\n\n`);
+  return out.trim();
+}
+
+function generateCEO10(rows, feeders){
+  rows = rows.filter(r=>num(r.durationHrs)>=10).sort((a,b)=>num(b.durationHrs)-num(a.durationHrs));
+  const bd = feeders.filter(r=>r.feederType==='BD');
+  const tie = feeders.filter(r=>r.feederType==='TIEUP' || /tie/i.test(r.tieUpDetails||r.feederName||''));
+  let out = `*Mr. CEO Sir Need Your Intervention Required Below WTG*\n\n*Above 10 Hrs WTGs Status*\n\n*Total WTG’s : ${rows.length}*\n\n`;
+  rows.forEach((r,i)=> out += `*${i+1}.* ${r.code} _ ${r.site || r.area} _ ${r.errorDetails} _ ${r.durationHrs} Hrs  ETR - ${r.etr || '-'}\n\n`);
+  out += `*Feeder BD : ${String(bd.length).padStart(2,'0')} [ ${sumWtgs(bd)} WTGs]*\n\n*Feeder LC :00 [ 00 WTGs ]*\n\n`;
+  bd.forEach((r,i)=> out += `${i+1}.${r.feederName}- Feeder BD _${r.errorOccurredTime || '-'} _ [ ${r.feederWtgs || 0}WTGs_] ETR _ ${r.etr || '-'}\n\n`);
+  out += ` \n*Feeder tie-up :${String(tie.length).padStart(2,'0')} [${sumWtgs(tie)} WTGs]*\n\n`;
+  tie.forEach((r,i)=> out += `${i+1}.${r.feederName || '-'} - ${r.tieUpDetails || '-'} _ ${r.errorOccurredTime || '-'} _ ${r.feederWtgs || 0} WTGs\n\n`);
+  return out.trim();
+}
+
+function generateMinor10(rows, feeders){
+  rows = rows.filter(r=>num(r.durationHrs)>=10).sort((a,b)=>num(b.durationHrs)-num(a.durationHrs));
+  const bd = feeders.filter(r=>r.feederType==='BD');
+  const lc = feeders.filter(r=>r.feederType==='LC');
+  const tie = feeders.filter(r=>r.feederType==='TIEUP' || /tie/i.test(r.tieUpDetails||r.feederName||''));
+  const tieArea = groupByArea(tie);
+  let out = `*TN Above 10 Hrs WTGs Status*\n\n*Total WTG’s : ${rows.length}*\n\n`;
+  rows.forEach((r,i)=> out += `*${i+1}.* ${r.code} _ ${r.site || r.area} _ ${r.errorDetails} _ ${r.durationHrs} Hrs  ETR - ${r.etr || '-'}\n\n`);
+  out += `\n*Feeder BD : ${String(bd.length).padStart(2,'0')} [${sumWtgs(bd)} WTGs]*\n\n`;
+  bd.forEach((r,i)=> out += `${i+1}. ${r.feederName} - Feeder BD _ ${r.errorOccurredTime || '-'} _ ${r.feederWtgs || 0}WTGs_ ${r.area || '-'} _ ETR : ${r.etr || '-'}\n\n`);
+  out += `*Feeder LC : ${String(lc.length).padStart(2,'0')} [${sumWtgs(lc)} WTGs]*\n----------------------------------------\nFeeder Tie-Up :${String(tie.length).padStart(2,'0')}[${sumWtgs(tie)} WTGs]\n\n`;
+  AREA_ORDER.forEach(area=>{ const arr=tieArea[area]||[]; if(!arr.length) return; out += `*${area} - ${String(arr.length).padStart(2,'0')}*\n\n`; arr.forEach((r,i)=> out += `${i+1}.${r.feederName || '-'} - ${r.tieUpDetails || '-'} - ${r.errorOccurredTime || '-'} _ ${r.feederWtgs || 0} WTGs\n\n`); });
+  return out.trim();
+}
+
+function generateReport(){
+  const rows = getCurrentRows();
+  const feeders = getCurrentFeeders();
+  let text='';
+  switch(document.getElementById('reportType').value){
+    case 'above6wtg': text = generateAbove6WTG(rows); break;
+    case 'above6feeder': text = generateAbove6Feeder(feeders); break;
+    case 'sh6minor': text = generateSH6Minor(rows, feeders); break;
+    case 'ceo10': text = generateCEO10(rows, feeders); break;
+    case 'minor10': text = generateMinor10(rows, feeders); break;
+  }
+  document.getElementById('output').value = text;
+}
+
+function copyOutput(){ const el=document.getElementById('output'); el.select(); document.execCommand('copy'); alert('Copied da ✅'); }
+
+function saveManualDB(){
+  const code = norm(document.getElementById('dbCode').value).toUpperCase();
+  const cap = capNorm(document.getElementById('dbCapacity').value);
+  if(!code){ alert('Code podu da'); return; }
+  APP.manualDB[keyFor(code,cap||'')] = { reason: norm(document.getElementById('dbReason').value), etr: norm(document.getElementById('dbETR').value), status: norm(document.getElementById('dbStatus').value), updatedAt: new Date().toISOString() };
+  saveLS();
+  document.getElementById('dbInfo').innerHTML = `<span class='ok'>Saved:</span> ${code} ${cap?`(${cap})`:''}`;
+}
+function searchManualDB(){
+  const code = norm(document.getElementById('dbCode').value).toUpperCase(); const cap = capNorm(document.getElementById('dbCapacity').value); const data = APP.manualDB[keyFor(code,cap||'')] || APP.manualDB[code] || null;
+  if(!data){ document.getElementById('dbInfo').innerHTML = `<span class='err'>No saved entry found</span>`; return; }
+  document.getElementById('dbETR').value = data.etr || ''; document.getElementById('dbStatus').value = data.status || ''; document.getElementById('dbReason').value = data.reason || ''; document.getElementById('dbInfo').innerHTML = `<span class='ok'>Loaded saved entry</span>`;
+}
+function clearManualDBEntry(){ const code = norm(document.getElementById('dbCode').value).toUpperCase(); const cap = capNorm(document.getElementById('dbCapacity').value); delete APP.manualDB[keyFor(code,cap||'')]; saveLS(); document.getElementById('dbInfo').innerHTML = 'Entry removed'; }
+function downloadBackup(){ const blob = new Blob([JSON.stringify(APP.manualDB,null,2)], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='wtg-manual-db-backup.json'; a.click(); }
+function importBackup(e){ const f=e.target.files[0]; if(!f) return; const reader=new FileReader(); reader.onload=()=>{ try{ APP.manualDB = JSON.parse(reader.result); saveLS(); alert('Backup imported ✅'); }catch(err){ alert('Invalid JSON backup'); } }; reader.readAsText(f); }
+
+(function init(){ const d=new Date(); document.getElementById('reportDate').value = `${String(d.getDate()).padStart(2,'0')}-${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`; document.getElementById('reportTime').value = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; document.getElementById('dbInfo').innerHTML = `Saved manual entries: <b>${Object.keys(APP.manualDB).length}</b>`; })();
+</script>
+</body>
+</html>
